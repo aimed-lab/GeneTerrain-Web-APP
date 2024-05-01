@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT with Suggestions</title>
+    <link rel="stylesheet" href="../css/chat.css", type="text/css">
+</head>
+<body>
+
+    <div id="chat-container">
+        <div id="chat-header">
+            <img src="images/chatgpt3.png" alt="" width="55px" height="40px">
+            <h5 id="chat-title">ChatGPT</h5>
+        </div>
+        <div id="chat-box">
+            <div id="suggestion-chips"></div>
+        </div>
+        <div id="user-input">
+            <input type="text" id="user-message" placeholder="Type your message...">
+            <button id="send-btn" class="btn btn-primary">Send</button>
+        </div>
+        <div id="hidden-div">
+            <input type="text" id="hidden-input" value="abcd">
+        </div>
+    </div>
+
+    <!-- <div id="chart-container">
+        Add your chart here using a library like Chart.js or any other of your choice
+    </div> -->
+
+    <script src="../js/chat.js"></script>
+    <!-- <script>
+        displaySuggestionChips()
+    </script> -->
+
+</body>
+</html>

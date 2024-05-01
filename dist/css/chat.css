@@ -1,0 +1,105 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f4f4f4;
+}
+
+#chat-container {
+    max-width: 850px;
+    margin: 20px auto;
+    padding: 10px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    text-align: start;
+}
+
+#suggestion-chips {
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    margin-left: 20%;
+    position: absolute;
+    bottom: 0;
+    
+}
+
+.suggestion-chip {
+    margin: 5px;
+    padding: 8px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+}
+
+#user-input {
+    display: flex;
+    margin-top: 10px;
+    border-radius: 50%;
+}
+
+#user-message {
+    flex-grow: 1;
+    padding: 8px;
+    margin-right: 2px;
+    border-bottom-left-radius: 20px;
+}
+
+#send-btn {
+    padding: 8px;
+    cursor: pointer;
+    min-width: 80px;
+    border-bottom-right-radius: 20px;
+}
+
+#chat-box {
+    height: 650px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+    position: relative;
+    display: block;
+    white-space: pre-wrap;
+}
+
+#code{
+    background-color: black;
+    color: white;
+    white-space: pre-wrap;
+}
+
+pre {
+    max-width: 100%;
+    overflow-x: auto;
+    background-color: #f0f0f0;
+    padding: 20px;
+}
+
+#chart-container {
+    max-width: 550px;
+    margin: 20px auto;
+    padding: 5px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+}
+
+#chat-header{
+    color: white;
+    display: flex;
+    padding:20px;
+    background-color: green;
+    margin-bottom: 10px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}
+
+#chat-title{
+    margin-block-start: auto;
+}
+
+#hidden-div{
+    display: none;
+}

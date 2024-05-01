@@ -1,0 +1,226 @@
+{
+  "version": "1.0.0",
+  "name": "webgpu-webpack-starter",
+  "dependencies": {
+    "@spreadtheweb/multi-range-slider": {
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/@spreadtheweb/multi-range-slider/-/multi-range-slider-1.0.3.tgz",
+      "overridden": false
+    },
+    "@types/gl-matrix": {
+      "version": "3.2.0",
+      "resolved": "https://registry.npmjs.org/@types/gl-matrix/-/gl-matrix-3.2.0.tgz",
+      "overridden": false
+    },
+    "@types/node": {
+      "version": "20.3.2",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-20.3.2.tgz",
+      "overridden": false
+    },
+    "@types/plotly.js": {
+      "version": "2.12.25",
+      "resolved": "https://registry.npmjs.org/@types/plotly.js/-/plotly.js-2.12.25.tgz",
+      "overridden": false
+    },
+    "@webgpu/types": {
+      "version": "0.1.40",
+      "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.40.tgz",
+      "overridden": false
+    },
+    "3d-view-controls": {
+      "version": "2.2.2",
+      "resolved": "https://registry.npmjs.org/3d-view-controls/-/3d-view-controls-2.2.2.tgz",
+      "overridden": false
+    },
+    "ag-grid-community": {
+      "version": "30.0.0",
+      "resolved": "https://registry.npmjs.org/ag-grid-community/-/ag-grid-community-30.0.0.tgz",
+      "overridden": false
+    },
+    "ag-grid-enterprise": {
+      "version": "30.0.2",
+      "resolved": "https://registry.npmjs.org/ag-grid-enterprise/-/ag-grid-enterprise-30.0.2.tgz",
+      "overridden": false
+    },
+    "assert": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/assert/-/assert-2.0.0.tgz",
+      "overridden": false
+    },
+    "axios": {
+      "version": "1.4.0",
+      "resolved": "https://registry.npmjs.org/axios/-/axios-1.4.0.tgz",
+      "overridden": false
+    },
+    "bootstrap": {
+      "version": "5.3.0",
+      "resolved": "https://registry.npmjs.org/bootstrap/-/bootstrap-5.3.0.tgz",
+      "overridden": false
+    },
+    "browserify-fs": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/browserify-fs/-/browserify-fs-1.0.0.tgz",
+      "overridden": false
+    },
+    "buffer": {
+      "version": "6.0.3",
+      "resolved": "https://registry.npmjs.org/buffer/-/buffer-6.0.3.tgz",
+      "overridden": false
+    },
+    "child_process": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/child_process/-/child_process-1.0.2.tgz",
+      "overridden": false
+    },
+    "colormap": {
+      "version": "2.3.2",
+      "resolved": "https://registry.npmjs.org/colormap/-/colormap-2.3.2.tgz",
+      "overridden": false
+    },
+    "csv-parser": {
+      "version": "3.0.0",
+      "resolved": "https://registry.npmjs.org/csv-parser/-/csv-parser-3.0.0.tgz",
+      "overridden": false
+    },
+    "csvtojson": {
+      "version": "2.0.10",
+      "resolved": "https://registry.npmjs.org/csvtojson/-/csvtojson-2.0.10.tgz",
+      "overridden": false
+    },
+    "cytoscape-cise": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/cytoscape-cise/-/cytoscape-cise-1.0.0.tgz",
+      "overridden": false
+    },
+    "deno": {
+      "version": "0.1.1",
+      "resolved": "https://registry.npmjs.org/deno/-/deno-0.1.1.tgz",
+      "overridden": false
+    },
+    "fs": {
+      "version": "0.0.1-security",
+      "resolved": "https://registry.npmjs.org/fs/-/fs-0.0.1-security.tgz",
+      "overridden": false
+    },
+    "gl-matrix": {
+      "version": "3.4.3",
+      "resolved": "https://registry.npmjs.org/gl-matrix/-/gl-matrix-3.4.3.tgz",
+      "overridden": false
+    },
+    "html-webpack-plugin": {
+      "version": "5.5.0",
+      "resolved": "https://registry.npmjs.org/html-webpack-plugin/-/html-webpack-plugin-5.5.0.tgz",
+      "overridden": false
+    },
+    "interpolate-arrays": {
+      "version": "1.0.4",
+      "resolved": "https://registry.npmjs.org/interpolate-arrays/-/interpolate-arrays-1.0.4.tgz",
+      "overridden": false
+    },
+    "jpeg-js": {
+      "version": "0.4.4",
+      "resolved": "https://registry.npmjs.org/jpeg-js/-/jpeg-js-0.4.4.tgz",
+      "overridden": false
+    },
+    "module-alias": {
+      "version": "2.2.2",
+      "resolved": "https://registry.npmjs.org/module-alias/-/module-alias-2.2.2.tgz",
+      "overridden": false
+    },
+    "pandas-js": {
+      "version": "0.2.4",
+      "resolved": "https://registry.npmjs.org/pandas-js/-/pandas-js-0.2.4.tgz",
+      "overridden": false
+    },
+    "pandas": {
+      "version": "0.0.3",
+      "resolved": "https://registry.npmjs.org/pandas/-/pandas-0.0.3.tgz",
+      "overridden": false
+    },
+    "papaparse": {
+      "version": "5.4.1",
+      "resolved": "https://registry.npmjs.org/papaparse/-/papaparse-5.4.1.tgz",
+      "overridden": false
+    },
+    "plotly.js-dist": {
+      "version": "2.25.0",
+      "resolved": "https://registry.npmjs.org/plotly.js-dist/-/plotly.js-dist-2.25.0.tgz",
+      "overridden": false
+    },
+    "plotly.js": {
+      "version": "2.25.0",
+      "resolved": "https://registry.npmjs.org/plotly.js/-/plotly.js-2.25.0.tgz",
+      "overridden": false
+    },
+    "plotly": {
+      "version": "1.0.6",
+      "resolved": "https://registry.npmjs.org/plotly/-/plotly-1.0.6.tgz",
+      "overridden": false
+    },
+    "process": {
+      "version": "0.11.10",
+      "resolved": "https://registry.npmjs.org/process/-/process-0.11.10.tgz",
+      "overridden": false
+    },
+    "properties-reader": {
+      "version": "2.2.0",
+      "resolved": "https://registry.npmjs.org/properties-reader/-/properties-reader-2.2.0.tgz",
+      "overridden": false
+    },
+    "react-dom": {
+      "version": "16.14.0",
+      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-16.14.0.tgz",
+      "overridden": false
+    },
+    "react-select": {
+      "version": "5.8.0",
+      "resolved": "https://registry.npmjs.org/react-select/-/react-select-5.8.0.tgz",
+      "overridden": false
+    },
+    "react": {
+      "version": "16.14.0",
+      "resolved": "https://registry.npmjs.org/react/-/react-16.14.0.tgz",
+      "overridden": false
+    },
+    "store": {
+      "version": "2.0.12",
+      "resolved": "https://registry.npmjs.org/store/-/store-2.0.12.tgz",
+      "overridden": false
+    },
+    "stream": {
+      "version": "0.0.2",
+      "resolved": "https://registry.npmjs.org/stream/-/stream-0.0.2.tgz",
+      "overridden": false
+    },
+    "ts-loader": {
+      "version": "9.4.2",
+      "resolved": "https://registry.npmjs.org/ts-loader/-/ts-loader-9.4.2.tgz",
+      "overridden": false
+    },
+    "tsconfig-paths": {
+      "version": "4.1.2",
+      "resolved": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.1.2.tgz",
+      "overridden": false
+    },
+    "typescipt": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/typescipt/-/typescipt-1.0.0.tgz",
+      "overridden": false
+    },
+    "webpack-cli": {
+      "version": "4.10.0",
+      "resolved": "https://registry.npmjs.org/webpack-cli/-/webpack-cli-4.10.0.tgz",
+      "overridden": false
+    },
+    "webpack-dev-server": {
+      "version": "4.10.0",
+      "resolved": "https://registry.npmjs.org/webpack-dev-server/-/webpack-dev-server-4.10.0.tgz",
+      "overridden": false
+    },
+    "webpack": {
+      "version": "5.88.2",
+      "resolved": "https://registry.npmjs.org/webpack/-/webpack-5.88.2.tgz",
+      "overridden": false
+    }
+  }
+}

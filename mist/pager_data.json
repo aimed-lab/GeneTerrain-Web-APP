@@ -1,0 +1,17 @@
+{
+    "COCO_V2": "8335.536272",
+    "DESCRIPTION": "Cell cycle checkpoints",
+    "GS_ID": "WAG002023",
+    "GS_SIZE": "289",
+    "LINK": "https://www.wikipathways.org/index.php/Pathway:WP1775",
+    "MULTI_N": "1333",
+    "NAME": "Cell cycle checkpoints",
+    "OLAP": "36",
+    "ORGANISM": "Homo sapiens",
+    "Rank": 1,
+    "SIMILARITY_SCORE": ".093064011379800853485064011379800853485",
+    "SOURCE": "WikiPathway_2021",
+    "TYPE": "P",
+    "pFDR": 1.7539539428303e-36,
+    "pvalue": 3.03452239244e-39
+}

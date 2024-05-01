@@ -1,0 +1,1 @@
+packages = ["pandas", "numpy", "requests", "gprofiler-official"]

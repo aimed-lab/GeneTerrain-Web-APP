@@ -1,0 +1,333 @@
+#container{
+  height: auto;
+}
+
+
+#filterDiv{
+  width: 28%;
+  height: 90%;
+  float: left;
+  margin-left: 0%;
+  overflow:auto;
+  position: fixed;
+}
+
+
+#plotDiv{
+  margin-left: 30%;
+  margin-top: 0%;
+  overflow: auto;
+  height: auto;
+}
+
+.parentScale{
+  display: flex;
+  width:fit-content;
+}
+
+.scale{
+  width: 100px;
+  flex:0.9;
+}
+
+#search-container{
+	margin-top:8%;
+}
+
+#range-slider-example {
+  float:left;
+  margin: auto;
+  height: 6px;
+  width: 220px;
+}
+
+#sigma_range,#pixel{
+	width: 220px;
+	float:left;
+  	margin: auto;
+  	height: 6px;
+	margin-left: 4px;
+}
+
+/* same as select gene dimmensions */
+/* #patient{
+	width:270px;
+	display: inline-block;
+	padding: 2px 5px 0px 5px;
+	border-radius: 4px;
+	border: solid 1px #ced4da;
+	background-color: white;
+	position: relative;
+	background-image: url("data:'image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+	background-repeat: no-repeat;
+	background-position: right 0.75rem center;
+	background-size: 16px 12px;
+} */
+
+#selectGene{
+	width: 200px;
+}
+
+option{
+	color: black;
+}
+
+/* #myGridTab2-01{
+	width: 50%;
+	height: 90%;
+	float: left;
+	margin-left: 0%;
+	overflow: auto;
+	position: fixed;
+  }
+  
+  #myGridTab2-01{
+	margin-left: 50%;
+	margin-top: 0%;
+	overflow: scroll;
+	height: auto;
+  } */
+#myGridTab2-01{
+	width: 49%;
+	float: left;
+}
+#myGridTab2-02{
+	margin-left: 50%;
+}
+
+#canvas-tab2-01{
+	/* max-width: 40%; */
+	/* width: 49%;
+	height: 59%; */
+	width: 49%;
+	aspect-ratio: 49/49;
+	/* width: 49%; */
+	/* width:400px;
+	height: 350px; */
+	margin-right: 50%;
+	float: left;
+}
+#canvas-tab2-02{
+	/* max-width: 45%; */
+	aspect-ratio: 49/49;
+	/* width: 49%; */
+	/* width: 300px;
+	height: 250px; */
+	margin-left: 51%;
+	/* float: right; */
+}
+
+#pathway-scatter{
+	width: 90%;
+}
+
+#gene-pathway-graph{
+	/* max-width: 45%; */
+	width: 90%;
+	max-width: 90%;
+	/* height: 40%;
+	max-height: 40%; */
+	/* float: left; */
+}
+#gene-pathway-table{
+	/* max-width: 45%; */
+	/* width: 39%;
+	margin-left: 61%;
+	max-width: 39%; */
+	/* float: right; */
+	width: 90%;
+}
+#pathway-filter-text{
+	/* max-widh: 45%; */
+	width: 59%;
+	float: left;
+}
+#pathway-filter-anchor{
+	/* max-width: 45%; */
+	float: right;
+	margin-top: 10px;
+	/* float: right; */
+}
+#pathwayResultInfo{
+	/* margin-top: 20%; */
+	width: 90%;
+}
+
+/* .navbar{
+	overflow: auto;
+	position: fixed;
+} */
+
+label{
+	width: 100%;
+}
+
+input{
+	padding: 5px;
+	margin-left: 100px;
+}
+
+#scaleOutput{
+	margin-left:0px;
+	padding: 0px;
+}
+
+/* Networking css */
+  #cy {
+	width: 1200px;
+	height: 600px;
+	position:relative;
+	right: 0;
+	top: 0;
+	z-index: 9999;
+	text-align: left;
+	margin-left:20%;
+	margin-top: 5%;
+  }
+  
+  h2 {
+	opacity: 0.5;
+	font-size: 1em;
+  }
+  
+#layer2-node{
+	left:0;
+}  
+
+.range-slider{
+  height: 5px;
+  /* background-color: #f8f9fa; */
+  /* color: #f8f9fa; */
+}
+
+#range-slider-example .range-slider__range {
+  height: 6px;
+  width: 30px;
+  background-color: #007bff;
+  border-color: #007bff;
+  z-index:0;
+}
+
+#range-slider-example .range-slider__thumb {
+  width: 16px;
+  height: 16px;
+  background-color: #007bff;
+  border-radius: 90px;
+  z-index:0;
+}
+
+/* #sigma_div,#scale_min_div,#scale_max_div,#showgene_div{
+  padding: 2px;
+  background-color: black;
+  border-radius: 25px;
+} */
+
+/* Custom CSS to move filters to the right */
+.ag-floating-filter-body {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ag-floating-filter-body .ag-floating-filter-input {
+  margin-left: auto;
+}
+
+
+/* multi slider */
+/* body {
+	margin: 0;
+	padding: 0;
+	height: 100vh;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #e5e5e5;
+}
+
+.middle {
+	position: relative;
+	width: 50%;
+	max-width: 500px;
+}
+
+.slider {
+	position: relative;
+	z-index: 1;
+	height: 10px;
+	margin: 0 15px;
+}
+.slider > .track {
+	position: absolute;
+	z-index: 1;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	border-radius: 5px;
+	background-color: gray;
+}
+.slider > .range {
+	position: absolute;
+	z-index: 2;
+	left: 25%;
+	right: 25%;
+	top: 0;
+	bottom: 0;
+	border-radius: 5px;
+	background-color: blue;
+}
+.slider > .thumb {
+	position: absolute;
+	z-index: 3;
+	width: 30px;
+	height: 30px;
+	background-color: blue;
+	border-radius: 50%;
+	box-shadow: 0 0 0 0 rgba(98,0,238,.1);
+	transition: box-shadow .3s ease-in-out;
+}
+.slider > .thumb.left {
+	left: 25%;
+	transform: translate(-15px, -10px);
+}
+.slider > .thumb.right {
+	right: 25%;
+	transform: translate(15px, -10px);
+}
+.slider > .thumb.hover {
+	box-shadow: 0 0 0 20px rgba(98,0,238,.1);
+}
+.slider > .thumb.active {
+	box-shadow: 0 0 0 40px rgba(98,0,238,.2);
+}
+
+input[type=range] {
+	position: absolute;
+	pointer-events: none;
+	-webkit-appearance: none;
+	z-index: 2;
+	height: 10px;
+	width: 100%;
+	opacity: 0;
+}
+input[type=range]::-webkit-slider-thumb {
+	pointer-events: all;
+	width: 30px;
+	height: 30px;
+	border-radius: 0;
+	border: 0 none;
+	background-color: red;
+	-webkit-appearance: none;
+}
+
+
+.youtube-link {
+	position: fixed;
+	left: 20px;
+	bottom: 20px;
+	color: #000;
+	text-decoration: none;
+	font-size: 12px;
+}
+multi slider */
+
