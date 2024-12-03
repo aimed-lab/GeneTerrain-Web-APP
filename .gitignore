@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+.clang-format
+LICENSE.md
+README.md
+dist/.DS_Store
+bootstap/css/.DS_Store
+.env

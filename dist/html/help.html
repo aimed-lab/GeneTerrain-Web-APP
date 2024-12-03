@@ -1,0 +1,734 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>GeneTerrain Documentation</title><style>
+    /* cspell:disable-file */
+    /* webkit printing magic: print all background colors */
+    html {
+        -webkit-print-color-adjust: exact;
+    }
+    * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    a,
+    a.visited {
+        color: inherit;
+        text-decoration: underline;
+    }
+    
+    .pdf-relative-link-path {
+        font-size: 80%;
+        color: #444;
+    }
+/*     
+    h1,
+    h2,
+    h3 {
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        font-weight: 600;
+        margin-bottom: 0;
+    } */
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-top: 0;
+        margin-bottom: 0.75em;
+    }
+    
+    /* h1 {
+        font-size: 1.875rem;
+        margin-top: 1.875rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    h3 {
+        font-size: 1.25rem;
+        margin-top: 1.25rem;
+    } */
+    
+    .source {
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 1.5em;
+        word-break: break-all;
+    }
+    
+    .callout {
+        border-radius: 3px;
+        padding: 1rem;
+    }
+    
+    figure {
+        margin: 1.25em 0;
+        page-break-inside: avoid;
+    }
+    
+    figcaption {
+        opacity: 0.5;
+        font-size: 85%;
+        margin-top: 0.5em;
+    }
+    
+    mark {
+        background-color: transparent;
+    }
+    
+    .indented {
+        padding-left: 1.5em;
+    }
+    
+    hr {
+        background: transparent;
+        display: block;
+        width: 100%;
+        height: 1px;
+        visibility: visible;
+        border: none;
+        border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+    }
+    
+    img {
+        max-width: 100%;
+    }
+    
+    @media only print {
+        img {
+            max-height: 100vh;
+            object-fit: contain;
+        }
+    }
+    
+    @page {
+        margin: 1in;
+    }
+    
+    .collection-content {
+        font-size: 0.875rem;
+    }
+    
+    .column-list {
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .column {
+        padding: 0 1em;
+    }
+    
+    .column:first-child {
+        padding-left: 0;
+    }
+    
+    .column:last-child {
+        padding-right: 0;
+    }
+    
+    .table_of_contents-item {
+        display: block;
+        font-size: 0.875rem;
+        line-height: 1.3;
+        padding: 0.125rem;
+    }
+    
+    .table_of_contents-indent-1 {
+        margin-left: 1.5rem;
+    }
+    
+    .table_of_contents-indent-2 {
+        margin-left: 3rem;
+    }
+    
+    .table_of_contents-indent-3 {
+        margin-left: 4.5rem;
+    }
+    
+    .table_of_contents-link {
+        text-decoration: none;
+        opacity: 0.7;
+        border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+    }
+    
+    table,
+    th,
+    td {
+        border: 1px solid rgba(55, 53, 47, 0.09);
+        border-collapse: collapse;
+    }
+    
+    table {
+        border-left: none;
+        border-right: none;
+    }
+    
+    th,
+    td {
+        font-weight: normal;
+        padding: 0.25em 0.5em;
+        line-height: 1.5;
+        min-height: 1.5em;
+        text-align: left;
+    }
+    
+    th {
+        color: rgba(55, 53, 47, 0.6);
+    }
+    
+    ol,
+    ul {
+        margin: 0;
+        margin-block-start: 0.6em;
+        margin-block-end: 0.6em;
+    }
+    
+    li > ol:first-child,
+    li > ul:first-child {
+        margin-block-start: 0.6em;
+    }
+    
+    ul > li {
+        list-style: disc;
+    }
+    
+    ul.to-do-list {
+        padding-inline-start: 0;
+    }
+    
+    ul.to-do-list > li {
+        list-style: none;
+    }
+    
+    .to-do-children-checked {
+        text-decoration: line-through;
+        opacity: 0.375;
+    }
+    
+    ul.toggle > li {
+        list-style: none;
+    }
+    
+    ul {
+        padding-inline-start: 1.7em;
+    }
+    
+    ul > li {
+        padding-left: 0.1em;
+    }
+    
+    ol {
+        padding-inline-start: 1.6em;
+    }
+    
+    ol > li {
+        padding-left: 0.2em;
+    }
+    
+    .mono ol {
+        padding-inline-start: 2em;
+    }
+    
+    .mono ol > li {
+        text-indent: -0.4em;
+    }
+    
+    .toggle {
+        padding-inline-start: 0em;
+        list-style-type: none;
+    }
+    
+    /* Indent toggle children */
+    .toggle > li > details {
+        padding-left: 1.7em;
+    }
+    
+    .toggle > li > details > summary {
+        margin-left: -1.1em;
+    }
+    
+    .selected-value {
+        display: inline-block;
+        padding: 0 0.5em;
+        background: rgba(206, 205, 202, 0.5);
+        border-radius: 3px;
+        margin-right: 0.5em;
+        margin-top: 0.3em;
+        margin-bottom: 0.3em;
+        white-space: nowrap;
+    }
+    
+    .collection-title {
+        display: inline-block;
+        margin-right: 1em;
+    }
+    
+    .page-description {
+        margin-bottom: 2em;
+    }
+    
+    .simple-table {
+        margin-top: 1em;
+        font-size: 0.875rem;
+        empty-cells: show;
+    }
+    .simple-table td {
+        height: 29px;
+        min-width: 120px;
+    }
+    
+    .simple-table th {
+        height: 29px;
+        min-width: 120px;
+    }
+    
+    .simple-table-header-color {
+        background: rgb(247, 246, 243);
+        color: black;
+    }
+    .simple-table-header {
+        font-weight: 500;
+    }
+    
+    time {
+        opacity: 0.5;
+    }
+    
+    .icon {
+        display: inline-block;
+        max-width: 1.2em;
+        max-height: 1.2em;
+        text-decoration: none;
+        vertical-align: text-bottom;
+        margin-right: 0.5em;
+    }
+    
+    img.icon {
+        border-radius: 3px;
+    }
+    
+    .user-icon {
+        width: 1.5em;
+        height: 1.5em;
+        border-radius: 100%;
+        margin-right: 0.5rem;
+    }
+    
+    .user-icon-inner {
+        font-size: 0.8em;
+    }
+    
+    .text-icon {
+        border: 1px solid #000;
+        text-align: center;
+    }
+    
+    .page-cover-image {
+        display: block;
+        object-fit: cover;
+        width: 100%;
+        max-height: 30vh;
+    }
+    
+    .page-header-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .page-header-icon-with-cover {
+        margin-top: -0.72em;
+        margin-left: 0.07em;
+    }
+    
+    .page-header-icon img {
+        border-radius: 3px;
+    }
+    
+    .link-to-page {
+        margin: 1em 0;
+        padding: 0;
+        border: none;
+        font-weight: 500;
+    }
+    
+    p > .user {
+        opacity: 0.5;
+    }
+    
+    td > .user,
+    td > time {
+        white-space: nowrap;
+    }
+    
+    input[type="checkbox"] {
+        transform: scale(1.5);
+        margin-right: 0.6em;
+        vertical-align: middle;
+    }
+    
+    p {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+    }
+    
+    .image {
+        border: none;
+        margin: 1.5em 0;
+        padding: 0;
+        border-radius: 0;
+        text-align: center;
+    }
+    
+    .code,
+    code {
+        background: rgba(135, 131, 120, 0.15);
+        border-radius: 3px;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+        font-size: 85%;
+        tab-size: 2;
+    }
+    
+    code {
+        color: #eb5757;
+    }
+    
+    .code {
+        padding: 1.5em 1em;
+    }
+    
+    .code-wrap {
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    
+    .code > code {
+        background: none;
+        padding: 0;
+        font-size: 100%;
+        color: inherit;
+    }
+    
+    blockquote {
+        font-size: 1.25em;
+        margin: 1em 0;
+        padding-left: 1em;
+        border-left: 3px solid rgb(55, 53, 47);
+    }
+    
+    .bookmark {
+        text-decoration: none;
+        max-height: 8em;
+        padding: 0;
+        display: flex;
+        width: 100%;
+        align-items: stretch;
+    }
+    
+    .bookmark-title {
+        font-size: 0.85em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: 1.75em;
+        white-space: nowrap;
+    }
+    
+    .bookmark-text {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .bookmark-info {
+        flex: 4 1 180px;
+        padding: 12px 14px 14px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .bookmark-image {
+        width: 33%;
+        flex: 1 1 180px;
+        display: block;
+        position: relative;
+        object-fit: cover;
+        border-radius: 1px;
+    }
+    
+    .bookmark-description {
+        color: rgba(55, 53, 47, 0.6);
+        font-size: 0.75em;
+        overflow: hidden;
+        max-height: 4.5em;
+        word-break: break-word;
+    }
+    
+    .bookmark-href {
+        font-size: 0.75em;
+        margin-top: 0.25em;
+    }
+    
+    .sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+    .code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+    .serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+    .mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+    .pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+    .pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+    .pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+    .pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+    .pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+    .pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+    .pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+    .pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+    .pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+    .pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+    .pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+    .pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+    .pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+    .pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+    .pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+    .pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+    .highlight-default {
+        color: rgba(55, 53, 47, 1);
+    }
+    .highlight-gray {
+        color: rgba(120, 119, 116, 1);
+        fill: rgba(120, 119, 116, 1);
+    }
+    .highlight-brown {
+        color: rgba(159, 107, 83, 1);
+        fill: rgba(159, 107, 83, 1);
+    }
+    .highlight-orange {
+        color: rgba(217, 115, 13, 1);
+        fill: rgba(217, 115, 13, 1);
+    }
+    .highlight-yellow {
+        color: rgba(203, 145, 47, 1);
+        fill: rgba(203, 145, 47, 1);
+    }
+    .highlight-teal {
+        color: rgba(68, 131, 97, 1);
+        fill: rgba(68, 131, 97, 1);
+    }
+    .highlight-blue {
+        color: rgba(51, 126, 169, 1);
+        fill: rgba(51, 126, 169, 1);
+    }
+    .highlight-purple {
+        color: rgba(144, 101, 176, 1);
+        fill: rgba(144, 101, 176, 1);
+    }
+    .highlight-pink {
+        color: rgba(193, 76, 138, 1);
+        fill: rgba(193, 76, 138, 1);
+    }
+    .highlight-red {
+        color: rgba(212, 76, 71, 1);
+        fill: rgba(212, 76, 71, 1);
+    }
+    .highlight-default_background {
+        color: rgba(55, 53, 47, 1);
+    }
+    .highlight-gray_background {
+        background: rgba(241, 241, 239, 1);
+    }
+    .highlight-brown_background {
+        background: rgba(244, 238, 238, 1);
+    }
+    .highlight-orange_background {
+        background: rgba(251, 236, 221, 1);
+    }
+    .highlight-yellow_background {
+        background: rgba(251, 237, 214, 1);
+    }
+    .highlight-teal_background {
+        background: rgba(237, 243, 236, 1);
+    }
+    .highlight-blue_background {
+        background: rgba(231, 243, 248, 1);
+    }
+    .highlight-purple_background {
+        background: rgba(244, 240, 247, 0.8);
+    }
+    .highlight-pink_background {
+        background: rgba(249, 238, 243, 0.8);
+    }
+    .highlight-red_background {
+        background: rgba(253, 235, 236, 1);
+    }
+    .block-color-default {
+        color: inherit;
+        fill: inherit;
+    }
+    .block-color-gray {
+        color: rgba(120, 119, 116, 1);
+        fill: rgba(120, 119, 116, 1);
+    }
+    .block-color-brown {
+        color: rgba(159, 107, 83, 1);
+        fill: rgba(159, 107, 83, 1);
+    }
+    .block-color-orange {
+        color: rgba(217, 115, 13, 1);
+        fill: rgba(217, 115, 13, 1);
+    }
+    .block-color-yellow {
+        color: rgba(203, 145, 47, 1);
+        fill: rgba(203, 145, 47, 1);
+    }
+    .block-color-teal {
+        color: rgba(68, 131, 97, 1);
+        fill: rgba(68, 131, 97, 1);
+    }
+    .block-color-blue {
+        color: rgba(51, 126, 169, 1);
+        fill: rgba(51, 126, 169, 1);
+    }
+    .block-color-purple {
+        color: rgba(144, 101, 176, 1);
+        fill: rgba(144, 101, 176, 1);
+    }
+    .block-color-pink {
+        color: rgba(193, 76, 138, 1);
+        fill: rgba(193, 76, 138, 1);
+    }
+    .block-color-red {
+        color: rgba(212, 76, 71, 1);
+        fill: rgba(212, 76, 71, 1);
+    }
+    .block-color-default_background {
+        color: inherit;
+        fill: inherit;
+    }
+    .block-color-gray_background {
+        background: rgba(241, 241, 239, 1);
+    }
+    .block-color-brown_background {
+        background: rgba(244, 238, 238, 1);
+    }
+    .block-color-orange_background {
+        background: rgba(251, 236, 221, 1);
+    }
+    .block-color-yellow_background {
+        background: rgba(251, 237, 214, 1);
+    }
+    .block-color-teal_background {
+        background: rgba(237, 243, 236, 1);
+    }
+    .block-color-blue_background {
+        background: rgba(231, 243, 248, 1);
+    }
+    .block-color-purple_background {
+        background: rgba(244, 240, 247, 0.8);
+    }
+    .block-color-pink_background {
+        background: rgba(249, 238, 243, 0.8);
+    }
+    .block-color-red_background {
+        background: rgba(253, 235, 236, 1);
+    }
+    .select-value-color-uiBlue { background-color: rgba(35, 131, 226, .07); }
+    .select-value-color-pink { background-color: rgba(245, 224, 233, 1); }
+    .select-value-color-purple { background-color: rgba(232, 222, 238, 1); }
+    .select-value-color-green { background-color: rgba(219, 237, 219, 1); }
+    .select-value-color-gray { background-color: rgba(227, 226, 224, 1); }
+    .select-value-color-transparentGray { background-color: rgba(227, 226, 224, 0); }
+    .select-value-color-translucentGray { background-color: rgba(0, 0, 0, 0.06); }
+    .select-value-color-orange { background-color: rgba(250, 222, 201, 1); }
+    .select-value-color-brown { background-color: rgba(238, 224, 218, 1); }
+    .select-value-color-red { background-color: rgba(255, 226, 221, 1); }
+    .select-value-color-yellow { background-color: rgba(249, 228, 188, 1); }
+    .select-value-color-blue { background-color: rgba(211, 229, 239, 1); }
+    .select-value-color-pageGlass { background-color: undefined; }
+    .select-value-color-washGlass { background-color: undefined; }
+    
+    .checkbox {
+        display: inline-flex;
+        vertical-align: text-bottom;
+        width: 16;
+        height: 16;
+        background-size: 16px;
+        margin-left: 2px;
+        margin-right: 5px;
+    }
+    
+    .checkbox-on {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+    }
+    
+    .checkbox-off {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+    }
+
+    video{
+        text-align: center;
+        align-items: center;
+        margin-left: center;
+    }
+        
+    </style></head><body><article id="7caefe5a-53b7-4e08-8cf4-b8ca62111ae2" class="page sans"><header><h1 class="page-title">GeneTerrain Documentation</h1><p class="page-description"></p><table class="properties"><tbody><tr class="property-row property-row-person"><th><span class="icon property-icon"><svg role="graphics-symbol" viewBox="0 0 16 16" style="width:14px;height:14px;display:block;fill:rgba(55, 53, 47, 0.45);flex-shrink:0" class="typesPerson"><path d="M10.9536 7.90088C12.217 7.90088 13.2559 6.79468 13.2559 5.38525C13.2559 4.01514 12.2114 2.92017 10.9536 2.92017C9.70142 2.92017 8.65137 4.02637 8.65698 5.39087C8.6626 6.79468 9.69019 7.90088 10.9536 7.90088ZM4.4231 8.03003C5.52368 8.03003 6.42212 7.05859 6.42212 5.83447C6.42212 4.63843 5.51245 3.68945 4.4231 3.68945C3.33374 3.68945 2.41846 4.64966 2.41846 5.84009C2.42407 7.05859 3.32251 8.03003 4.4231 8.03003ZM1.37964 13.168H5.49561C4.87231 12.292 5.43384 10.6074 6.78711 9.51807C6.18628 9.14746 5.37769 8.87231 4.4231 8.87231C1.95239 8.87231 0.262207 10.6917 0.262207 12.1628C0.262207 12.7974 0.548584 13.168 1.37964 13.168ZM7.50024 13.168H14.407C15.4009 13.168 15.7322 12.8423 15.7322 12.2864C15.7322 10.8489 13.8679 8.88354 10.9536 8.88354C8.04492 8.88354 6.17505 10.8489 6.17505 12.2864C6.17505 12.8423 6.50635 13.168 7.50024 13.168Z"></path></svg></span>Owner</th><td><span class="user"><span class="icon text-icon user-icon"><span class="user-icon-inner">H</span></span>Hari Merla</span></td></tr><tr class="property-row property-row-multi_select"><th><span class="icon property-icon"><svg role="graphics-symbol" viewBox="0 0 16 16" style="width:14px;height:14px;display:block;fill:rgba(55, 53, 47, 0.45);flex-shrink:0" class="typesMultipleSelect"><path d="M1.91602 4.83789C2.44238 4.83789 2.87305 4.40723 2.87305 3.87402C2.87305 3.34766 2.44238 2.91699 1.91602 2.91699C1.38281 2.91699 0.952148 3.34766 0.952148 3.87402C0.952148 4.40723 1.38281 4.83789 1.91602 4.83789ZM5.1084 4.52344H14.3984C14.7607 4.52344 15.0479 4.23633 15.0479 3.87402C15.0479 3.51172 14.7607 3.22461 14.3984 3.22461H5.1084C4.74609 3.22461 4.45898 3.51172 4.45898 3.87402C4.45898 4.23633 4.74609 4.52344 5.1084 4.52344ZM1.91602 9.03516C2.44238 9.03516 2.87305 8.60449 2.87305 8.07129C2.87305 7.54492 2.44238 7.11426 1.91602 7.11426C1.38281 7.11426 0.952148 7.54492 0.952148 8.07129C0.952148 8.60449 1.38281 9.03516 1.91602 9.03516ZM5.1084 8.7207H14.3984C14.7607 8.7207 15.0479 8.43359 15.0479 8.07129C15.0479 7.70898 14.7607 7.42188 14.3984 7.42188H5.1084C4.74609 7.42188 4.45898 7.70898 4.45898 8.07129C4.45898 8.43359 4.74609 8.7207 5.1084 8.7207ZM1.91602 13.2324C2.44238 13.2324 2.87305 12.8018 2.87305 12.2686C2.87305 11.7422 2.44238 11.3115 1.91602 11.3115C1.38281 11.3115 0.952148 11.7422 0.952148 12.2686C0.952148 12.8018 1.38281 13.2324 1.91602 13.2324ZM5.1084 12.918H14.3984C14.7607 12.918 15.0479 12.6309 15.0479 12.2686C15.0479 11.9062 14.7607 11.6191 14.3984 11.6191H5.1084C4.74609 11.6191 4.45898 11.9062 4.45898 12.2686C4.45898 12.6309 4.74609 12.918 5.1084 12.918Z"></path></svg></span>Tags</th><td></td></tr><tr class="property-row property-row-created_time"><th><span class="icon property-icon"><svg role="graphics-symbol" viewBox="0 0 16 16" style="width:14px;height:14px;display:block;fill:rgba(55, 53, 47, 0.45);flex-shrink:0" class="typesCreatedAt"><path d="M8 15.126C11.8623 15.126 15.0615 11.9336 15.0615 8.06445C15.0615 4.20215 11.8623 1.00293 7.99316 1.00293C4.13086 1.00293 0.938477 4.20215 0.938477 8.06445C0.938477 11.9336 4.1377 15.126 8 15.126ZM8 13.7383C4.85547 13.7383 2.33301 11.209 2.33301 8.06445C2.33301 4.91992 4.84863 2.39746 7.99316 2.39746C11.1377 2.39746 13.6738 4.91992 13.6738 8.06445C13.6738 11.209 11.1445 13.7383 8 13.7383ZM4.54102 8.91211H7.99316C8.30078 8.91211 8.54004 8.67285 8.54004 8.37207V3.8877C8.54004 3.58691 8.30078 3.34766 7.99316 3.34766C7.69238 3.34766 7.45312 3.58691 7.45312 3.8877V7.83203H4.54102C4.2334 7.83203 4.00098 8.06445 4.00098 8.37207C4.00098 8.67285 4.2334 8.91211 4.54102 8.91211Z"></path></svg></span>Created time</th><td><time>@Sept 05, 2024 10:49 AM</time></td></tr></tbody></table></header><div class="page-body" style="text-align: left;"><h2 id="23e5ba8c-5d7c-4f0e-ac72-df2526611fb7" class="">GeneTerrain:</h2><p id="d86a827a-9d57-4ad4-ae02-3191fb45de2e" class="">Geneterrain is data visualization software which built to draw various plots based on gene expression and clinical data of cancer patients. This software is built using Typescript, WebGPU and Node js. Other tools used are AG-Grid, PlotlyJS, OpenAI.</p><figure class="block-color-gray_background callout" style="white-space:pre-wrap;display:flex" id="7d0de0ec-2163-466f-b1a7-9b8de6382d23"><div style="font-size:1.5em"><span class="icon">💡</span></div><div style="width:100%">Geneterrain refers to the heatmap drawn for selected samples.</div></figure><h3 id="8ab75e33-ab0d-4bd4-9027-ee96f4ef1a40" class=""><strong>Releases:</strong></h3><p id="242e7384-3ff1-41e3-856e-d68806f6cf75" class="">Version: 0.0.1</p><h3 id="b66dd8a1-2e9f-4f78-89a9-fd5334cd415b" class=""><strong>Sources:</strong></h3><ol type="a" id="e7941121-1f33-43d3-9b01-051f72d596da" class="numbered-list" start="1"><li>code: <a href="https://github.com/aimed-lab/GeneTerrain-Web-APP">https://github.com/aimed-lab/GeneTerrain-Web-APP</a></li></ol><ol type="a" id="9d0eb6a8-611e-4214-8e28-9b60f3963287" class="numbered-list" start="2"><li>Website: <a href="https://138.26.49.153/">https://138.26.49.153/</a></li></ol><p id="f055983d-67f6-46dc-b254-ff39b076cef1" class="">
+    </p><h3 id="9d653f25-e688-476d-829a-913a15521161" class=""><strong>Tabs:</strong></h3><ol type="1" id="377d2668-b8b6-4b7f-ad15-4eb7f8a1242d" class="numbered-list" start="1"><li>Basic</li></ol><ol type="1" id="34db7d11-a93e-4cfb-be43-4e4d626f66d4" class="numbered-list" start="2"><li>Compare</li></ol><ol type="1" id="5e9c2f26-24d0-441c-9b6e-54c1464915d3" class="numbered-list" start="3"><li>Pathway</li></ol><ol type="1" id="0bc4df27-fc8c-41ba-bd75-dfe82146a2a8" class="numbered-list" start="4"><li>Pathway Details</li></ol><ol type="1" id="6f162e6c-163e-4751-94ff-18fc2dfd27e5" class="numbered-list" start="5"><li>Network</li></ol><ol type="1" id="8bae7b2f-25fe-48f5-84d6-70bff16ccbf8" class="numbered-list" start="6"><li>Slider</li></ol><ol type="1" id="38b2f4ba-0d5d-486e-812c-b129e8f901bb" class="numbered-list" start="7"><li>API</li></ol><p id="4c4ee273-c505-466d-b075-021377c4bba0" class="">
+    </p><h3 id="4c0f290d-72df-4353-abff-9138c68a6cb5" class=""><strong>Basic:</strong></h3><p id="c323da3d-7287-45f1-a3d8-50fb83a4dfbe" class="">A table of clinical samples of patients are displayed here. Select the samples and click generate from filters section to draw heatmap for selected samples.<div class="indented"><figure class="block-color-gray_background callout" style="white-space:pre-wrap;display:flex" id="f30afc22-5b77-4121-bfad-c5f4312be0b9"><div style="font-size:1.5em"><span class="icon">💡</span></div><div style="width:100%">Tables are displayed using AG-Grid. AG-Grid is not just a table, it offers various features out of it column filtering is the one mostly used.</div></figure><figure class="block-color-gray_background callout" style="white-space:pre-wrap;display:flex" id="55fa9ddb-70ae-4928-9bf2-aab7942e8f57"><div style="font-size:1.5em"><span class="icon">💡</span></div><div style="width:100%">Filter section is located left to the screen used to apply various filter once plot is generated.</div></figure><figure class="block-color-gray_background callout" style="white-space:pre-wrap;display:flex" id="4499bb17-ce9f-4200-afa3-379af3520704"><div style="font-size:1.5em"><span class="icon">💡</span></div><div style="width:100%">Plots like heatmaps are drawn using PlotlyJS. </div></figure></div></p><ol type="1" id="584336e0-1b10-4951-a41c-114bc6caf148" class="numbered-list" start="1"><li><strong>AG-Grid Samples:</strong></li></ol><figure id="0ab6f905-391c-4670-8c22-a4b37b9f90a1" class="image"><a href="../static/documentation/Untitled.png"><img style="width:624px" src="../static/documentation/Untitled.png"/></a></figure><p id="c3db25fd-54be-4f99-b07e-06dc8110ea9c" class="">
+    </p><ol type="1" id="e4c267f8-3658-428a-813c-3178ba43e2f8" class="numbered-list" start="2"><li><strong>Result:</strong></li></ol><figure id="85af190a-ad74-4f42-a145-3d5236c73663" class="image"><a href="../static/documentation/Untitled%201.png"><img style="width:528px" src="../static/documentation/Untitled%201.png"/></a></figure><p id="063a4c29-0dc1-4308-b0f0-62de7abdb6a8" class="">
+    </p><h3 id="e0dfcdcd-f1b5-4577-9d9a-7ff1c9045274" class="">Compare:</h3><p id="baf26583-ecf9-44eb-890c-edcd54162626" class="">This is similar to Basic tab. Instead we draw two Geneterrain’s inorder to draw comparision between each other. </p><p id="92e9ab90-6f9a-499e-a4cc-cf94e6c51d2f" class="">Once two geneterrian’s are generated, drag and selected any area from one geneterrain. Genes related to selected region are show in both geneterrain’s.</p><ol type="1" id="558da481-8ba3-453c-90fe-f6f50bac0b0e" class="numbered-list" start="1"><li><strong>AG-Grid samples:</strong><figure id="8025bd58-0c38-4868-a6f1-6f0389b8bcfb" class="image"><a href="../static/documentation/Untitled%202.png"><img style="width:708px" src="../static/documentation/Untitled%202.png"/></a></figure></li></ol><ol type="1" id="8cdf6570-450e-47f8-8afc-70d65c0a2091" class="numbered-list" start="2"><li><strong>Result:</strong><figure id="ea3c6247-84d6-4e19-8154-3d66730a2723">
+        <video width="600" controls>
+            <source src="../static/documentation/Screen_Recording_2024-04-30_at_12.45.01_PM.mov" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <figcaption>
+            <a href="https://prod-files-secure.s3.us-west-2.amazonaws.com/29d208a7-8ab0-4170-aeb9-541d45439df6/93a51646-6b49-432c-8990-0f8061707bb4/Screen_Recording_2024-04-30_at_12.45.01_PM.mov">Download the video</a>
+        </figcaption>
+    </figure>
+    </li></ol><p id="2cfa98cc-202a-4cd9-8e34-4f5c052c17ae" class="">
+    </p><ol type="1" id="842c1b48-e94e-424d-beeb-0f063156e0e4" class="numbered-list" start="3"><li><strong>Bar plots for selected genes:</strong><figure id="4ed0a8b2-68db-42da-8aa6-9e89ee0f9bd5" class="image"><a href="../static/documentation/Untitled%203.png"><img style="width:680px" src="../static/documentation/Untitled%203.png"/></a></figure><figure id="941c1e7d-e478-4912-bac0-e3fbb726b565" class="image"><a href="../static/documentation/Untitled%204.png"><img style="width:680px" src="../static/documentation/Untitled%204.png"/></a></figure><p id="287ae37d-73b6-42dc-bb84-73591132de0d" class=""><strong>Note</strong></p><figure class="block-color-gray_background callout" style="white-space:pre-wrap;display:flex" id="11c9bcff-14ac-491a-a3ce-0cf95d19a6cb"><div style="font-size:1.5em"><span class="icon">💡</span></div><div style="width:100%">These selected genes are used in all the next steps.</div></figure><p id="36a237a0-2192-4117-aaae-66eb9f8efba2" class="">
+    </p><p id="365eeae5-d92a-43e6-8dbd-bccb25002ffa" class="">
+    </p></li></ol><h3 id="cb8ff35d-476f-4ef7-846f-43d3fcc9dcb1" class="">Pathway:</h3><p id="9f498cfd-cc96-4bb6-8be1-3c1a111db186" class="">Selected genes and its properties are displayed here in pathway tab. Once user selects genes and clicks on generate, those genes are sent to Pager API to fetch PAG’s related to the selected genes.</p><p id="f8c625e5-061a-4c45-8a0b-e8529c4e77ef" class="">Resulted PAG’s are show in form of customized plotly box plot.</p><figure class="block-color-gray_background callout" style="white-space:pre-wrap;display:flex" id="79099f91-9ab4-4773-b47f-0bcfb61d4ddf"><div style="font-size:1.5em"><span class="icon">💡</span></div><div style="width:100%">Pathway and Annotated-list Gene-signature Electronic Repository (PAGER) is an online systems biology tool for constructing and visualizing gene and PAG networks from multiple PAG genesets.</div></figure><p id="a8008768-3cda-4e14-917e-ed81fcd1fc07" class="">
+    </p><p id="0a55d59b-6e24-43fe-862c-5097e81cc79f" class="">Further from the returned PAG’s result data, we can also draw customized bar plot between PAG name and its log pvalue. check below.</p><figure id="26495d9a-23f9-4642-8b04-9b6c2739c3b3">
+        <div class="source">
+            <!-- Displaying video from the local path -->
+            <video width="600" controls>
+                <source src="../static/documentation/Screen_Recording_2024-04-30_at_1.35.25_PM.mov" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+    
+            <!-- Optional link as a fallback or reference -->
+            <a href="https://prod-files-secure.s3.us-west-2.amazonaws.com/29d208a7-8ab0-4170-aeb9-541d45439df6/164456ba-90fd-4588-af0d-c25dfb6895ef/Screen_Recording_2024-04-30_at_1.35.25_PM.mov">
+                Download the video
+            </a>
+        </div>
+    </figure>
+    <p id="b4c2eea6-ece3-4128-b530-1bdb69d3836d" class="">
+    </p><h3 id="836aa70e-1406-41fd-8fd1-c20932971cb9" class="">Network(Beta):</h3><p id="0bb85969-78a9-4eee-b3ec-9c9539ec5ad3" class="">As we got PAG’s information for selected genes, we draw a network showing PAG name as node and no of genes related between two PAG’s as edges. Network is drawn using javascript cytoscape library.</p><figure id="42dbcc71-cdad-4bc2-95a0-620479f0fb0d" class="image"><a href="../static/documentation/Untitled%205.png"><img style="width:528px" src="../static/documentation/Untitled%205.png"/></a></figure><p id="91f39035-3deb-4f86-a3a2-74def6236585" class="">
+    </p><h3 id="edb2e23d-8274-4f28-a64a-eef5b86c9317" class="">Pathway Details(Beta):</h3><p id="8319c6a1-33bf-4466-8814-9fbbc4ce4e15" class="">We have PAG’s information for selected genes. In this tab when we select any PAG id, from the selected genes from compare tab which are part of selected PAG id from current tab are shown in the geneterrain. Lets say common genes.</p><p id="44425b6f-f54f-49c2-8b74-ff13c9b40f67" class="">When user clicks on generate, new geneterrain is drawn from common genes mainly focusing on showing peak and valley regions.</p><figure id="7094005c-5545-4554-aacc-02142c15f49e">
+        <video width="600" controls>
+            <source src="../static/documentation/Screen_Recording_2024-04-30_at_8.03.30_PM.mov" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <figcaption>
+            <a href="https://prod-files-secure.s3.us-west-2.amazonaws.com/29d208a7-8ab0-4170-aeb9-541d45439df6/fbd2398c-0070-41f1-a6bb-ead34fb6b7c7/Screen_Recording_2024-04-30_at_8.03.30_PM.mov">Download the video</a>
+        </figcaption>
+    </figure>
+    <p id="ca146632-0254-4495-b2ed-19c304ca1703" class="">
+    </p><p id="0f809879-feaf-4259-95d7-b2d79a361ddb" class="">
+    </p><h3 id="b8a8bf87-1c2e-4dac-9361-4593a631b54c" class="">Slider: </h3><p id="eea3292b-fa12-41fa-a8b6-eef018a11c69" class="">Slider is used to show two plots as one plot where there is a slider to move left and right used to compare both plots. please check below.</p><figure id="51230d8d-9c3f-42ec-ab74-82a52da0ac4b">
+        <video width="600" controls>
+            <source src="../static/documentation/Screen_Recording_2024-05-01_at_11.48.57_AM.mov" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <figcaption>
+            <a href="https://prod-files-secure.s3.us-west-2.amazonaws.com/29d208a7-8ab0-4170-aeb9-541d45439df6/73c36362-8f1a-416b-a8d1-a3c6f5d54c3c/Screen_Recording_2024-05-01_at_11.48.57_AM.mov">Download the video</a>
+        </figcaption>
+    </figure>
+    <h3 id="c6afa030-1eac-470f-b336-3354f841b616" class="">API(Beta):</h3><figure class="block-color-gray_background callout" style="white-space:pre-wrap;display:flex" id="135e1afb-0b1b-4450-84c6-ae282748791d"><div style="font-size:1.5em"><span class="icon">💡</span></div><div style="width:100%">More prompt engineering can be done in future.</div></figure><p id="647a713f-d0cf-4b80-8c80-08e1b3d09d37" class="">Access to OpenAI gpt3 model to answer question related to any selected genes from user. This is still in development mode.<div class="indented"><figure id="f98da81d-778c-49a0-bc42-e64f3c85a629">
+        <video width="600" controls>
+            <source src="../static/documentation/Screen_Recording_2024-05-01_at_12.06.02_PM.mov" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <figcaption>
+            <a href="https://prod-files-secure.s3.us-west-2.amazonaws.com/29d208a7-8ab0-4170-aeb9-541d45439df6/da742fa7-5943-48af-ae50-6541ca6f1de7/Screen_Recording_2024-05-01_at_12.06.02_PM.mov">Download the video</a>
+        </figcaption>
+    </figure>
+    </div></p></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>

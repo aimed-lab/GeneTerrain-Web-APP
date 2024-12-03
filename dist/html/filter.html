@@ -1,0 +1,229 @@
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
+  <!-- <script src="../js/bootstrap.min.js"></script> -->
+  <!-- <link rel="stylesheet" href="css/bootstrap.min.css", type="text/css">
+  <link rel="stylesheet" href="css/bootstrap-multiselect.css">
+  <script src = "js/bootstrap-multiselect.min.js"></script> -->
+  <link rel="stylesheet" href="../css/filter.css">
+  </head>
+  
+  <div class="filter-container">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between" title="Gene Name Filter">
+        <h5 class="mb-0"></h5>
+        <button class="btn btn-link filter-toggle" type="button" data-bs-toggle="collapse" aria-expanded="false">
+          <span class="toggle-icon"><img src="../images/filter_black.png" width="25px" height="25px"></span>
+        </button>
+      </div>
+      <div class="collapse filter-content">
+        <div class="card-body">
+          <form class="filter-form">
+            <div class="mb-3">
+              <label for="filterType" class="form-label">Filter Type</label>
+              <select class="form-select filter-type" id="canvas-div01-select">
+                <option value="Gene Expression">Gene Expression</option>
+                <option value="Gene Name">Gene Name</option>
+                <option value="pathwayFilter">Pag's</option>
+              </select>
+            </div>
+            <div class="gene-expression-inputs">
+              <div class="mb-3">
+                <label class="form-label">Minimum Value</label>
+                <input type="text" id="canvas-div01-text-min" class="form-control min-value" placeholder="Eg: -1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Maximum Value</label>
+                <input type="text" id="canvas-div01-text-max" class="form-control max-value" placeholder="Eg: 1">
+              </div>
+            </div>
+            <div class="gene-name-input" style="display: none;">
+              <label class="form-label">Gene Name</label>
+              <div class="mb-3">
+                <div class="gene-tags"></div>
+                <input type="text" id="canvas-div01-text-gname" class="form-control gene-name" placeholder="Gene Name">
+              </div>
+            </div>
+            <div class="pag-name-input" style="display: none;">
+              <label class="form-label">Pag ID</label>
+              <div class="mb-3">
+                <div class="gene-tags"></div>
+                <input type="text" id="canvas-div01-text-pagid" class="form-control gene-name" placeholder="Gene Name">
+              </div>
+            </div>
+            <!-- <button type="submit" id="canvas-div01-button" class="btn btn-dark w-100">Filter</button> -->
+            <button type="button" class="btn btn-primary" value="Filter" id="canvas-div01-button"><img src="../images/filter.png" width="20px" height="20px"></button>
+            <button type="button" class="btn btn-primary" value="Reset" id="canvas-div01-reset-button"><img src="../images/reset_white.png" width="25px" height="25px" style="pointer-events: none;"></button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+  let filterCount = 0;
+
+  function initializeFilter(filterContainer) {
+    const filterId = `filter-${filterCount++}`;
+    const filterType = filterContainer.querySelector('.filter-type');
+    const geneExpressionInputs = filterContainer.querySelector('.gene-expression-inputs');
+    const geneNameInput = filterContainer.querySelector('.gene-name-input');
+    const pagInput = filterContainer.querySelector('.pag-name-input');
+    const toggleIcon = filterContainer.querySelector('.toggle-icon');
+    const filterTag = filterContainer.querySelector('.mb-0');
+    const filterContent = filterContainer.querySelector('.filter-content');
+    const filterToggle = filterContainer.querySelector('.filter-toggle');
+
+    // Set unique IDs
+    filterContainer.id = filterId;
+    filterToggle.setAttribute('data-bs-target', `#${filterId} .filter-content`);
+    filterToggle.setAttribute('aria-controls', `${filterId}-content`);
+    filterContent.id = `${filterId}-content`;
+
+    filterType.addEventListener('change', function() {
+      if (this.value === 'Gene Expression') {
+        geneExpressionInputs.style.display = 'block';
+        geneNameInput.style.display = 'none';
+        pagInput.style.display='none'
+      } else if (this.value === 'Gene Name') {
+        geneExpressionInputs.style.display = 'none';
+        geneNameInput.style.display = 'block';
+        pagInput.style.display='none'
+      } else if (this.value === 'pathwayFilter'){
+        geneExpressionInputs.style.display = 'none';
+        geneNameInput.style.display = 'none';
+        pagInput.style.display='block'
+      }
+    });
+
+    // Implement collapse functionality without Bootstrap JS
+    filterToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      const expanded = this.getAttribute('aria-expanded') === 'true';
+      this.setAttribute('aria-expanded', !expanded);
+      if (expanded) {
+        filterContent.classList.remove('show');
+        filterTag.textContent=""
+        filterContainer.style.width="50px"
+        toggleIcon.innerHTML = '<img src="../images/filter_black.png" width="25px" height="25px">';
+      } else {
+        filterContent.classList.add('show');
+        filterTag.textContent="Filter"
+        filterContainer.style.width="400px"
+        toggleIcon.innerHTML = '<img src="../images/hyphen.png" width="15px" height="15px">';
+      }
+    });
+
+    // Optional: Add form submission handling
+    const filterForm = filterContainer.querySelector('.filter-form');
+    filterForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const selectedType = filterType.value;
+      let filterValue;
+      if (selectedType === 'Gene Expression') {
+        const minValue = filterContainer.querySelector('#canvas-div01-text-min').value;
+        const maxValue = filterContainer.querySelector('#canvas-div01-text-max').value;
+        filterValue = `Min: ${minValue}, Max: ${maxValue}`;
+      } else {
+        filterValue = filterContainer.querySelector('#canvas-div01-text-gname').value;
+      }
+      console.log(`Filter applied: ${selectedType} - ${filterValue}`);
+      // Add your filter logic here
+    });
+  }
+
+  const container = document.getElementById('multi-select-container');
+        const input = document.getElementById('multi-select-input');
+        const selectedItems = new Set();
+
+        function addItem(value) {
+            if (value.trim() === '' || selectedItems.has(value)) return;
+
+            const item = document.createElement('span');
+            item.className = 'selected-item';
+            item.innerHTML = `
+                ${value}
+                <span class="remove-item">&times;</span>
+            `;
+            item.querySelector('.remove-item').addEventListener('click', function() {
+                item.remove();
+                selectedItems.delete(value);
+            });
+            container.insertBefore(item, input);
+            selectedItems.add(value);
+            input.value = '';
+        }
+
+        // input.addEventListener('keydown', function(e) {
+        //     if (e.key === 'Enter') {
+        //         e.preventDefault();
+        //         addItem(this.value.trim());
+        //     }
+        // });
+
+        // container.addEventListener('click', function() {
+        //     input.focus();
+        // });
+  var geneNameInput = document.getElementById('canvas-div01-text-gname')
+  var tagContainer = geneNameInput.previousElementSibling, tags = [];
+
+  var addTag = ()=>{
+    const tagText = geneNameInput.value.trim();
+    if (tagText && !tags.includes(tagText)) {
+      const tag = document.createElement('span');
+      tag.classList.add('gene-tag');
+      tag.innerHTML = `
+        ${tagText}
+        <span class="gene-tag-remove" onclick="removeTag(this, '${tagText}')">&times;</span>
+      `;
+      tagContainer.appendChild(tag);
+      tags.push(tagText);
+      geneNameInput.name = tags;
+      geneNameInput.value = '';
+    }
+  }
+  
+  var pagNameInput = document.getElementById('canvas-div01-text-pagid')
+  var pagTagContainer = pagNameInput.previousElementSibling, pagTags = [];
+  var addPagTag = ()=>{
+    const tagText = pagNameInput.value.trim();
+    if (tagText && !tags.includes(tagText)) {
+      const tag = document.createElement('span');
+      tag.classList.add('gene-tag');
+      tag.innerHTML = `
+        ${tagText}
+        <span class="gene-tag-remove" onclick="removeTag(this, '${tagText}')">&times;</span>
+      `;
+      pagTagContainer.appendChild(tag);
+      pagTags.push(tagText);
+      pagNameInput.name = pagTags;
+      pagNameInput.value = '';
+    }
+  }
+
+  pagNameInput.addEventListener('keydown',(e)=>{
+    if(e.key=='Enter' || e.key==','){
+      e.preventDefault()
+      addPagTag();
+    }
+  })
+
+  geneNameInput.addEventListener('keydown',(e)=>{
+    if(e.key=='Enter' || e.key==','){
+      e.preventDefault()
+      addTag();
+    }
+  })
+
+  window.removeTag = function(element, tagText) {
+    element.parentElement.remove();
+    tags = tags.filter(tag => tag !== tagText);
+    pagTags = pagTags.filter(tag => tag !== tagText);
+    geneNameInput.name = tags;
+    pagNameInput.name = pagTags
+  }
+
+  initializeFilter(document.querySelectorAll('.filter-container')[0])
+  // Initialize all filter containers
+  // document.querySelectorAll('.filter-container').forEach(initializeFilter);
+  </script>

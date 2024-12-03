@@ -392,8 +392,8 @@ export function getExp(){
             expGeneMap[expOutput[i]['gene_symbol']].push(+expOutput[i]['value']);
         }
     }
-    store.set('expGeneMap', expGeneMap);
-    // console.log(expMap)
+    console.log(Object.keys(expGeneMap).length);
+    // store.set('expGeneMap', expGeneMap);
     console.log('End getExp');
     return expMap;
 }

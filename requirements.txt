@@ -1,5 +1,0 @@
-requests
-numpy
-pandas
-flask
-flask_cors

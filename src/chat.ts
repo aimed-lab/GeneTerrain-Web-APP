@@ -3,6 +3,8 @@ const Prism = require('prismjs');
 // const loadLanguages = require('prismjs/components/');
 // loadLanguages(['python']);
 
+const apiKey = process.env.apiKey || ""
+
 export function Chat(){
     // Initial suggestion chips
     var initialSuggestions = ["Can you provide me with information about the role of selected genes in the development and progression of GBM cancer?",
@@ -143,30 +145,29 @@ async function parseChatGPTOutput(response: string){
     return response
 }
 
-
 async function openaiAPI(prompt: string){
-    return ""
-    // const openai = new OpenAI({ apiKey: apiKey, dangerouslyAllowBrowser: true});
-    // var apiResponse: string = ''
-    // // const openai = new OpenAI();
-    // async function main() {
-    //     const stream = await openai.chat.completions.create({
-    //         model: "gpt-3.5-turbo-1106",
-    //         messages: [{ role: "user", content: prompt }],
-    //         // stream: true,
-    //     });
-    //     apiResponse = stream.choices[0].message.content;
-    //     console.log(stream)
-    //     // for await (const chunk of stream) {
-    //     //     // alert(chunk.choices[0]?.delta?.content || "");
-    //     //     // console.log(chunk.choices[0]?.delta?.content || "")
-    //     //     console.log(chunk)
-    //     //     apiResponse+=chunk.choices[0]?.delta?.content || "";
-    //     // }
-    // }
+    // return ""
+    const openai = new OpenAI({ apiKey: apiKey, dangerouslyAllowBrowser: true});
+    var apiResponse: string = ''
+    // const openai = new OpenAI();
+    async function main() {
+        const stream = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo-1106",
+            messages: [{ role: "user", content: prompt }],
+            // stream: true,
+        });
+        apiResponse = stream.choices[0].message.content;
+        console.log(stream)
+        // for await (const chunk of stream) {
+        //     // alert(chunk.choices[0]?.delta?.content || "");
+        //     // console.log(chunk.choices[0]?.delta?.content || "")
+        //     console.log(chunk)
+        //     apiResponse+=chunk.choices[0]?.delta?.content || "";
+        // }
+    }
   
-    // await main();
-    // return apiResponse
+    await main();
+    return apiResponse
 }
 
   

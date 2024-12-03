@@ -4,9 +4,20 @@ const csvtojson=require("csvtojson");
 //import('ag-grid-community')
 import('ag-grid-enterprise')
 // import { Grid } from 'ag-grid-community';
-import { DomLayoutType, Grid, GridOptions } from 'ag-grid-community';
+// import { DomLayoutType,  } from 'ag-grid-community';
+import {Grid, GridOptions,GridApi} from 'ag-grid-community'
 import { copyFileSync } from 'fs';
 import {getPlotData,getGenes} from './rest'
+var Plotly = require('plotly.js/lib/core');
+Plotly.register([
+  require('plotly.js/lib/pie'),
+  require('plotly.js/lib/choropleth'),
+  require('plotly.js/lib/heatmap'),
+  require('plotly.js/lib/scatter'),
+  require('plotly.js/lib/contour'),
+]);
+
+// module.exports = Plotly;
 
 var samples: string[] = []
 var tab2Samples01: string[] = []
@@ -83,9 +94,10 @@ export function mergeLayoutExpData(layoutMap: Map<string,any>, expMap:Map<string
   console.log(layoutMap['cacng3'])
   var genes = getGenes();
   console.log('inside mergeLayout')
-  console.log(layoutMap.size)
+  console.log(layoutMap)
+  console.log(Object.keys(layoutMap))
   console.log(genes)
-  console.log(expMap)
+  console.log(Object.keys(expMap[select]))
   // expMap[select]=expMap['TCGA-02-0004-01'];
   for(var key of Object.keys(layoutMap)){
     if(key in expMap[select]){
@@ -97,8 +109,17 @@ export function mergeLayoutExpData(layoutMap: Map<string,any>, expMap:Map<string
       map[row[0]]=row;
       // console.log(row);
     }
+    else{
+      var row = layoutMap[key];
+      if(row.length==4)
+        row[3]=0
+      else
+        row.push(0)
+      map[row[0]]=row;
+    }
   }
   console.log(map);
+  console.log(Object.keys(map));
   return map;
 }
 export function preProcessExpData(expData){
@@ -458,13 +479,16 @@ export async function getAGPLOT(selection: string[]){
   // const rowCount = api.getDisplayedRowCount();
   // const containerHeight = rowHeight * rowCount;
   // gridDiv.style.height = containerHeight + 'px';
+  var gridApi: GridApi;
   new Grid(gridDiv, gridOptions);
   new Grid(tab2GridDiv1, tab2GridOptions1);
   new Grid(tab2GridDiv2, tab2GridOptions2);
 
+  // await drawUmapScatter(rowSamples, 'Type')
+
   gridDiv.addEventListener('click',()=>{
     console.log('inside grid div click event')
-    const selectedRows = gridOptions.api.getSelectedRows();
+    const selectedRows = (gridOptions.api as any).getSelectedRows();
     // console.log(selectedRows)
     // console.log(selectedRows[selectedRows.length-1]['SampleID'])
     //selection.push(selectedRows[selectedRows.length-1]['SampleID'])
@@ -480,7 +504,7 @@ export async function getAGPLOT(selection: string[]){
   })
   tab2GridDiv1.addEventListener('click',()=>{
     console.log('inside grid div click event')
-    const selectedRows = tab2GridOptions1.api.getSelectedRows();
+    const selectedRows = (tab2GridOptions1.api as any).getSelectedRows();
     selection=[]
     for(var row of selectedRows){
       selection.push(row['sampleid'])
@@ -489,14 +513,18 @@ export async function getAGPLOT(selection: string[]){
   })
   tab2GridDiv2.addEventListener('click',()=>{
     console.log('inside grid div click event')
-    const selectedRows = tab2GridOptions2.api.getSelectedRows();
+    const selectedRows = (tab2GridOptions2.api as any).getSelectedRows();
     selection=[]
     for(var row of selectedRows){
       selection.push(row['sampleid'])
     }
     setTab2Selection02(selection)
   })
-
+  
+  var agGridSearch = document.getElementById('search-container') as HTMLDivElement;
+  agGridSearch.addEventListener('input', ()=>{
+    (gridOptions.api as any).setQuickFilter((document.getElementById('search-bar-filter') as HTMLInputElement).value)
+  })
   // gridOptions.api.setSideBarVisible(false);
   // gridDiv.scrollTo(0, gridDiv.scrollHeight)
   // gridDiv.style.height = 40.36*rowData.length+'px';
@@ -510,3 +538,137 @@ export async function getAGPLOT(selection: string[]){
   console.log('preProcessing.ts || getAGPLOT || end')
 }
 
+// async function drawUmapScatter(rowSamples: any[], factor: string) {
+//   var set:Set<string> = new Set()
+//   var x1 = [], y1 = []
+//   for(var row of rowSamples){
+//     set.add(row['Type'])
+//     x1.push(row['Type'])
+//     y1.push(row['age'])
+//   }
+//   console.log(x1)
+//   console.log(y1)
+
+//   const groupedData = rowSamples.reduce((acc, record) => {
+//     if (!acc[record['Type']]) {
+//       acc[record['Type']] = [];
+//     }
+//     acc[record['Type']].push(record);
+//     return acc;
+//   }, {});
+
+//   var traces = []
+//   for(var type of set){
+//     var y1 = rowSamples.filter(record => record['Type']==type).map(record => record['age'])
+//     var color = generateRandomColorName()
+//     traces.push(
+//       {
+//         y: y1,
+//         name: type,
+//         mode: 'markers+bar',
+//         // mode: 'markers',
+//         type: 'box',
+//         boxpoints: 'all',
+//         jitter: 1,
+//         pointpos:0,
+//         width:0.4,
+//         line: {color: 'rgba(255,255,255,0)',opacity:0.8},
+//         // line: {color: 'rgba(255,255,255,0)'},
+//         // marker: {color: markerColor},
+//         // box:{color:'white'},
+//         marker: {color: color,
+//         size:10},
+//         // colorscale: 'Jet',
+//         hoverinfo:true,
+//         // visible: 'true',
+//         // name: 'Gene_Name',
+//         }
+//     )
+
+//     var scatter = {
+//       x: type,
+//       y: [0.3],
+//       width: [0.3],
+//       type:'bar',
+//       marker:{color:['blue']},
+//     }
+//     traces.push(scatter)
+
+//   }
+//   var layout = {
+//     // width:568,
+//     // height:768,
+//     showlegend: false,
+//     yaxis:{
+//         title:{text:'Samples'},
+//         showgrid:false,
+//         autotick: true,
+//         showticklabels: true,
+//         zeroline: true,
+//     },
+//     xaxis:{
+//         tickangle:30,
+//         autotick: true,
+//         zeroline: true,
+//         showticklabels: true,
+//         automargin: true,
+//     },
+//     boxmode: 'group',
+//     bargap: 0.4,
+//     margin: {
+//       l: 70,
+//       r: 70,
+//       b: 70,
+//       t: 70,
+//       pad: 4
+//     },
+//     legend: {
+//       x: 0.8,
+//       // xanchor: 'right',
+//       y: 1.05,
+//     //   bgcolor: 'E2E2E2'
+//     bgcolor: 'transparent'
+//     },
+//     font:{
+//       color:"black",
+//       size:12,
+//     },
+//   }
+//   Plotly.newPlot('Umap-specific', traces, layout);
+// }
+
+
+var colorIndex = 0
+function generateRandomColorName(pvalueArray=undefined) {
+  const adjectives = ['red', 'blue', 'green', 'Yellow', 'Purple', 'Orange', 'Pink', 'Brown', 'Gray', 'Cyan'];
+  // // const adjectives = ['red', 'blue', 'green','yellow','purple','orange','pink']
+  // var res=[];
+  // var map = {};
+  // var k=0;
+  // for(var i=0;i<arr.length;i++){
+  //     // res.push(adjectives[Math.floor(Math.random() * adjectives.length)])
+  //     if(map[arr[i]]==undefined){
+  //         res.push(adjectives[k%adjectives.length])
+  //         map[arr[i]]=adjectives[k%adjectives.length]
+  //         k++;
+  //     }
+  //     else
+  //         res.push(map[arr[i]])
+  //     // res.push('Red')
+  // }
+  // console.log(arr.length+" "+res.length);
+  // console.log(res);
+  var len = adjectives.length;
+  if(pvalueArray==undefined)
+      return adjectives[colorIndex++%len]
+  else{
+      var output=[]
+      for(var i=0;i<pvalueArray.length;i++){
+          console.log(parseInt(pvalueArray[i]))
+          output.push(adjectives[parseInt(pvalueArray[i])%len])
+      }
+      // console.log(output)
+      return output
+  }
+  // return res;
+}

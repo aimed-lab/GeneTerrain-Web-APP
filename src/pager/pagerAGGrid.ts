@@ -141,7 +141,7 @@ const drawAGGridTable = async (maskingAGGridDiv: HTMLDivElement, response) => {
 
         maskingAGGridDiv.addEventListener('click',async ()=>{
             console.log('inside grid div click event')
-            const selectedRows = gridOptions.api.getSelectedRows();
+            const selectedRows = (gridOptions.api as any).getSelectedRows();
             var ptXDiv = document.getElementById('store-genes-x') as HTMLInputElement
             var ptYDiv = document.getElementById('store-genes-y') as HTMLInputElement
             var ptX = ptXDiv.innerText.split(",").map(value => +value);
@@ -227,13 +227,13 @@ const drawAGGridTable = async (maskingAGGridDiv: HTMLDivElement, response) => {
                 'yaxis.range': [Math.min(...commonPtY)-20, Math.max(...commonPtY)+20]
             })
             var d = document.getElementById("canvas-tab2-01-copy") as PlotlyHTMLElement;
-            console.log(Object.keys(d))
-            console.log(d.data)
-            console.log(d.layout)
-            console.log(genePtXMap)
-            console.log(genePtYMap)
-            console.log(genesIndexMap)
-            console.log(commonGeneIndecies)
+            // console.log(Object.keys(d))
+            // console.log(d.data)
+            // console.log(d.layout)
+            // console.log(genePtXMap)
+            // console.log(genePtYMap)
+            // console.log(genesIndexMap)
+            // console.log(commonGeneIndecies)
         })
     }
     catch(e){

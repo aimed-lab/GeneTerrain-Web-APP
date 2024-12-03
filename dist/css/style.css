@@ -1,7 +1,69 @@
-#container{
-  height: auto;
+:root{
+	--primary-background-color: #144B39;
+	--primary-color: #f0f0f0;
+	--primary-background-hover-color: #144B39; 
+	--primary-light-background-color: #s;
+	--primary-light-light-background-color: #88C408;
+	--secondary-background-color: #f0f0f0;
+	--secondary-light-background-color: #618496;
+	--secondary-color: #f0f0f0;
+	--scale: 1.05;
+	/* --box-shadow: 0 4px 8px 0 var(--primary-background-color), 0 6px 20px 0 var(--primary-background-color); */
+	--box-shadow: 0 8px 12px 0 rgba(0, 0, 0, 0.2), 0 10px 24px 0 rgba(0, 0, 0, 0.19);
+	--bs-border-color: red;
+	--default-input-blue-color: #007bff;
 }
 
+.bg-primary-color{
+	background-color: var(--primary-background-color);
+	color: var(--primary-color); 
+}
+
+.bg-secondary-color{
+	background-color: var(--secondary-background-color);
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: var(--secondary-background-color);
+	justify-content: center;
+
+}
+
+.container-fluid{
+  height: auto;
+  padding-left: 0px !important;
+  margin-left: 0px !important;
+  margin-top: 0px !important;
+}
+
+#filterParentDiv{
+	display: flex;
+    align-items: flex-start;
+}
+
+.hideable-div {
+	background-color: #f0f0f0;
+	padding: 16px;
+	transition: all 0.3s ease-in-out;
+	width: 250px;
+	opacity: 1;
+	overflow: hidden;
+}
+.hidden {
+	width: 0;
+	opacity: 0;
+}
+.toggle-button {
+	/* margin-left: 29%; */
+	/* background-color: #3490dc; */
+	color: white;
+	border: none;
+	padding: 4px 8px;
+	cursor: pointer;
+	z-index: 1000;
+}
 
 #filterDiv{
   width: 28%;
@@ -10,14 +72,26 @@
   margin-left: 0%;
   overflow:auto;
   position: fixed;
-}
+  box-shadow: var(--box-shadow);
+  background-color: var(--primary-light-background-color);
+  color: var(--primary-color);
 
+}
 
 #plotDiv{
   margin-left: 30%;
-  margin-top: 0%;
-  overflow: auto;
+  /* margin-top: 0%; */
+  /* overflow: auto; */
   height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.ag-theme-alpine{
+	max-width: 90%;
+	/* box-shadow: var(--box-shadow); */
 }
 
 .parentScale{
@@ -38,11 +112,11 @@
   float:left;
   margin: auto;
   height: 6px;
-  width: 220px;
+  width: 300px;
 }
 
 #sigma_range,#pixel{
-	width: 220px;
+	width: 300px;
 	float:left;
   	margin: auto;
   	height: 6px;
@@ -90,16 +164,18 @@ option{
 #myGridTab2-01{
 	width: 49%;
 	float: left;
+	height: 100%;
 }
 #myGridTab2-02{
 	margin-left: 50%;
+	height: 100%;
 }
 
 #canvas-tab2-01{
 	/* max-width: 40%; */
 	/* width: 49%;
 	height: 59%; */
-	width: 49%;
+	width: 50%;
 	aspect-ratio: 49/49;
 	/* width: 49%; */
 	/* width:400px;
@@ -113,12 +189,13 @@ option{
 	/* width: 49%; */
 	/* width: 300px;
 	height: 250px; */
-	margin-left: 51%;
+	margin-left: 49%;
 	/* float: right; */
 }
 
 #pathway-scatter{
 	width: 90%;
+	height: 100%;
 }
 
 #gene-pathway-graph{
@@ -141,6 +218,7 @@ option{
 	/* max-widh: 45%; */
 	width: 59%;
 	float: left;
+	/* color: black */
 }
 #pathway-filter-anchor{
 	/* max-width: 45%; */
@@ -186,8 +264,8 @@ input{
   }
   
   h2 {
-	opacity: 0.5;
-	font-size: 1em;
+	/* opacity: 0.5; */
+	/* font-size: 1em; */
   }
   
 #layer2-node{
@@ -196,22 +274,24 @@ input{
 
 .range-slider{
   height: 5px;
-  /* background-color: #f8f9fa; */
+  /* background-color: var(--default-input-blue-color); */
   /* color: #f8f9fa; */
 }
 
 #range-slider-example .range-slider__range {
   height: 6px;
   width: 30px;
-  background-color: #007bff;
-  border-color: #007bff;
+  /* background-color: var(--secondary-background-color); */
+  background-color: var(--default-input-blue-color);
+  border:1px solid var(--default-input-blue-color);
   z-index:0;
 }
 
 #range-slider-example .range-slider__thumb {
   width: 16px;
   height: 16px;
-  background-color: #007bff;
+  /* background-color: var(--secondary-background-color); */
+  background-color: var(--default-input-blue-color);
   border-radius: 90px;
   z-index:0;
 }
@@ -331,3 +411,137 @@ input[type=range]::-webkit-slider-thumb {
 }
 multi slider */
 
+
+#genename_filter{
+	/* margin-left: 80%; */
+}
+
+#search-container {
+    width: 100%;
+    margin-top: 1%; /* Keeping your existing margin-top */
+	margin-bottom: 1%;
+	margin-left: -10%;
+}
+
+#search-bar-filter {
+    width: 70%;
+    padding: 10px 15px;
+    font-size: 16px;
+    border: 1px solid #ced4da;
+    border-radius: 20px; /* Increased border radius for a more rounded look */
+    outline: none;
+    /* transition: border-color 0.3s ease, box-shadow 0.3s ease; */
+}
+
+#search-bar-filter:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.btn-light{
+	background-color: transparent !important;
+	color: var(--secondary-background-color) !important;
+	border-color: transparent !important;
+} 
+
+#show-hide{
+	color: var(--primary-color) !important;
+}
+.btn-light:focus, .btn-light:hover, .btn-light:active{
+	scale: var(--scale);
+    /* background-color: var(--primary-background-hover-color) !important; */
+	color: var(--primary-background-color);
+	border-color: transparent !important;
+	font-weight: bold !important;
+}
+.btn-primary{
+	background-color: var(--primary-background-color) !important;
+	color: var(--secondary-background-color) !important;
+	border-color: transparent !important;
+} 
+.btn-primary:hover, .btn-primary:active, .btn-primary:visited{
+	scale: var(--scale);
+    background-color: var(--primary-background-hover-color) !important;
+	color: var(--primary-background-color);
+}
+#toggleButton:hover{
+	scale: var(--scale);
+}
+
+.list-group-item-secondary{
+	/* background-color: var(--secondary-light-background-color) !important; */
+	background-color: var(--primary-background-color) !important;
+	color: var(--primary-color) !important;
+	border-radius: 5px !important;
+	max-width: 95%;
+}
+.borderr{
+	border: 1px solid var(--primary-background-color) !important;
+	border-radius: 5px;
+	max-width: 95%;
+}
+.borderr *{
+	max-width: 97%;
+}
+.inner-borderr{
+	border-radius: 5px !important;
+	border: 1px solid black !important;
+	box-shadow: var(--box-shadow);
+	background-color: var(--primary-background-color) !important;
+}
+
+#patient *{
+	color: black !important;
+}
+
+.plotly-plot{
+	margin: 0 auto;
+	display: flex;
+	justify-content: center;
+	/* z-index: 500; */
+}
+
+.form-control{
+	border-radius: 5px !important;
+	border: 1px solid transparent !important;
+}
+
+.input-ranges{
+	width: 330px !important;
+}
+/*
+input[type="range"]::-webkit-slider-runnable-track {
+	background: red;
+	height: 0.5rem;
+  } */
+  /* input[type=range] {
+	-webkit-appearance: none; /* Override default CSS styles
+	appearance: none;
+	background: var(--secondary-background-color); Grey background
+	accent-color: var(--primary-light-background-color) !important; Change the accent color
+	border-radius: 5px !important;
+	outline: none !important;
+  }
+   */
+
+   #loadingOverlay {
+	position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: transparent; /* Optional overlay effect */
+        z-index: 9999;
+}
+
+#loadingOverlay img {
+	width: 100px;
+	height: 100px;
+}
+
+#alertContainer{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+	z-index: 1060;
+  }

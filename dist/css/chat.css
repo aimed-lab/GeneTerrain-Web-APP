@@ -1,7 +1,16 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background-color: #f4f4f4;
+:root{
+	--primary-background-color: #144B39;
+	--primary-color: #f0f0f0;
+	--primary-background-hover-color: #144B39; 
+	--primary-light-background-color: #1E6B52;
+	--primary-light-light-background-color: #88C408;
+	--secondary-background-color: #f0f0f0;
+	--secondary-light-background-color: #618496;
+	--secondary-color: #f0f0f0;
+	--scale: 1.05;
+	/* --box-shadow: 0 4px 8px 0 var(--primary-background-color), 0 6px 20px 0 var(--primary-background-color); */
+	--box-shadow: 0 8px 12px 0 rgba(0, 0, 0, 0.2), 0 10px 24px 0 rgba(0, 0, 0, 0.19);
+	--bs-border-color: red;
 }
 
 #chat-container {
@@ -21,6 +30,11 @@ body {
     position: absolute;
     bottom: 0;
     
+}
+
+#suggestion-chips *{
+    color: var(--primary-color) !important;
+    background-color: var(--primary-light-light-background-color) !important;
 }
 
 .suggestion-chip {

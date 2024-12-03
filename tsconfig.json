@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "strict": false,
     "jsx": "react",
     "noEmitOnError": false,
     "noImplicitAny": false,
@@ -18,10 +19,11 @@
     "module": "CommonJS",
     //"module": "Node16",
     "esModuleInterop": true,
-    "strict": true,
+    // "strict": true,
     "preserveConstEnums": true,
     "sourceMap": true,
   },
+  "include": ["src/**/*"],
   "moduleResolution": "node",
   "paths": {
     "gl-matrix": ["./node_modules/gl-matrix/gl-matrix-min.js"]

@@ -1,0 +1,91 @@
+:root{
+	--primary-background-color: #144B39;
+	--primary-color: #f0f0f0;
+	--primary-background-hover-color: #144B39; 
+	--primary-light-background-color: #1E6B52;
+	--primary-light-light-background-color: #88C408;
+	--secondary-background-color: #f0f0f0;
+	--secondary-light-background-color: #618496;
+	--secondary-color: #f0f0f0;
+	--scale: 1.05;
+	/* --box-shadow: 0 4px 8px 0 var(--primary-background-color), 0 6px 20px 0 var(--primary-background-color); */
+	--box-shadow: 0 8px 12px 0 rgba(0, 0, 0, 0.2), 0 10px 24px 0 rgba(0, 0, 0, 0.19);
+	--bs-border-color: red;
+}
+
+/* toggle options start */
+.toggleContainer {
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	width: fit-content;
+	border: 3px solid var(--primary-light-light-background-color);
+	border-radius: 10px;
+	background: var(--primary-light-light-background-color);
+	font-weight: bold;
+	color: #343434;
+	cursor: pointer;
+  }
+  .toggleContainer::before {
+	content: '';
+	position: absolute;
+	width: 50%;
+	height: 100%;
+	left: 0%;
+	border-radius:10px;
+	background: white;
+	transition: all 0.3s;
+  }
+  .toggleCheckbox:checked + .toggleContainer::before {
+	 left: 50%;
+  }
+  .toggleContainer .toggle-option {
+	padding: 6px;
+	text-align: center;
+	z-index: 1;
+  }
+  .toggleCheckbox {
+	display: none;
+  }
+  .toggleCheckbox:checked + .toggleContainer .toggle-option:first-child{
+	color: white;
+	transition: color 0.3s;
+  }
+
+  .toggleCheckbox:checked + .toggleContainer .toggle-option:nth-child(3){
+	color: white;
+	transition: color 0.3s;
+  }
+
+  .toggleCheckbox:checked + .toggleContainer .toggle-option:nth-child(4){
+	color: #343434;
+	transition: color 0.3s;
+  }
+
+  .toggleCheckbox:checked + .toggleContainer .toggle-option:nth-child(2){
+	color: #343434;
+	transition: color 0.3s;
+  }
+
+  .toggleCheckbox + .toggleContainer .toggle-option:first-child{
+	color: #343434;
+	transition: color 0.3s;
+  }
+
+  .toggleCheckbox + .toggleContainer .toggle-option:nth-child(3){
+	color: #343434;
+	transition: color 0.3s;
+  }
+
+  .toggleCheckbox + .toggleContainer .toggle-option:nth-child(4){
+	color: white;
+	transition: color 0.3s;
+  }
+
+  .toggleCheckbox + .toggleContainer .toggle-option:nth-child(2){
+	color: white;
+	transition: color 0.3s;
+  }
+
+
+/* toggle options end */

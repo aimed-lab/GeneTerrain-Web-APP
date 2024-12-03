@@ -1,11 +1,29 @@
+import { CanceledError } from "axios"
+
 const axios = require('axios')
 
-var BASEURL = "http://127.0.0.1:5000/"
+// var BASEURL = "http://127.0.0.1:5000/"
+var BASEURL = process.env.BASEURL;
+// var BASEURL = "http://localhost:5000/"
 var PAGIDGENE_URL = BASEURL+"pagRankedGene/"
 var RUN_PAGER_URL = BASEURL
 
-export async function runPager(genes, ...params) {
 
+function isPagerAPIUp(flag){
+  document.getElementById('note-pathway').style.display='none'
+  if(flag){
+    document.getElementById("nav-pathway-details-content").style.display =
+        "block";
+    document.getElementById('api-error-message').style.display='none'
+  }
+  else{
+    document.getElementById("nav-pathway-details-content").style.display =
+        "none";
+    document.getElementById('api-error-message').style.display='block'
+  }
+}
+
+export async function runPager(genes, ...params) {
   var formdata = {
     "genes": genes,
     "source": ["WikiPathway_2021"],
@@ -46,8 +64,12 @@ export async function runPager(genes, ...params) {
     console.log('Pager API result for MYC gene')
     console.log(dataArray);
     response = dataArray
+    isPagerAPIUp(true)
   })
-  .catch(error => console.error('Error:', error));
+  .catch(error => {console.error('Error:', error);
+    if(error instanceof CanceledError) return;
+    isPagerAPIUp(false)
+  });
 
 //   response = [{
 //     "COCO_V2": "8335.536272",

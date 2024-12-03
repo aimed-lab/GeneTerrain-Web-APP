@@ -3,7 +3,7 @@ import * as React from "react";
 
 import Select from "react-select";
 const options = [
-  { value: 'GBM', label: 'GBM' },
+  { value: 'GBM', label: 'GBM', },
   { value: 'CGGA', label: 'CGGA' },
   { value: 'COAD', label: 'COAD' },
   { value: 'UCEC', label: 'UCEC' },

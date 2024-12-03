@@ -1,0 +1,63 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // "version": "0.2.0",
+    // "configurations": [
+    //     {
+    //         "type": "chrome",
+    //         "request": "launch",
+    //         "name": "Open index.html",
+    //         "file": "/Users/hari/Documents/sidharth sir/geneterrian task 1/webgpu-webpack-starter/index.html"
+    //     }
+    // ]
+
+
+//     "version": "0.2.0",
+//     "configurations":[
+//     {
+//       "type": "node",
+//       "request": "attach",
+//       "name": "Attach to Process",
+//       "port": 9229,
+//       "restart": true,
+//       "protocol": "inspector"
+//     }
+//   ]
+// }
+
+
+"version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      "program": "${workspaceFolder}/path-to-your-app-entry-file.js", // Change to your entry file
+      "skipFiles": [
+        "<node_internals>/**",        // Skips internal Node.js files
+        "node_modules/**/*.js",       // Skips all files in node_modules
+        "**/webpack.js",              // Skips any specific file named webpack.js
+        "**/webpack/**/*.js"          // Skips all Webpack-related files
+      ],
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"], // Ensure you set the right dist folder
+      "protocol": "inspector"
+    }
+  ]
+}
+
+
+// {
+//   "version": "0.2.0",
+//   "configurations": [
+//     {
+//       "type": "node",
+//       "request": "launch",
+//       "name": "Launch Program",
+//       "skipFiles": ["<node_internals>/**"],
+//       "program": "${workspaceFolder}/dist/bundle.js",
+//       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+//     }
+//   ]
+// }
