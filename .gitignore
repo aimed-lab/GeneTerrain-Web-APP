@@ -6,3 +6,4 @@ README.md
 dist/.DS_Store
 bootstap/css/.DS_Store
 .env
+dist/html/geneTerrain_documentation
