@@ -90,6 +90,8 @@ import fetchGeneTerrainData from "./utilities/getFirebaseGeneTerrains";
 import ShowSavedGeneterrains, {
   callShowSavedGeneterrains,
 } from "./components/showSavedGeneterrains";
+import { plotlyLayout } from "./utilities/PlotlyUtility";
+import { openSearchModal } from "./components/SearchGenes";
 
 interface GeneTerrainPlot {
   data: Object;
@@ -97,7 +99,12 @@ interface GeneTerrainPlot {
 }
 
 export interface GeneTerrainProps {
-  geneTerrain?: string;
+  geneTerrain?: any;
+  geneTerrain1?: any;
+  geneTerrain2?: any;
+  geneTerrain3?: any;
+  geneTerrain4?: any;
+  geneTerrain5?: any;
   cancerType: string;
   sigma: number;
   scaleMin: number;
@@ -330,6 +337,50 @@ function normalize(arr: Float32Array) {
   return temp;
 }
 
+var sigmaIndexMap = {
+  0: 0,
+  0.05: 1,
+  0.1: 2,
+  0.15: 3,
+  0.2: 4,
+  0.25: 5,
+  0.3: 6,
+  0.35: 7,
+  0.4: 8,
+  0.45: 9,
+  0.5: 10,
+  0.55: 11,
+  0.6: 12,
+  0.65: 13,
+  0.7: 14,
+  0.75: 15,
+  0.8: 16,
+  0.85: 17,
+  0.9: 18,
+  0.95: 19,
+  1: 20,
+};
+
+var selectedSigmas = [0.05, 0.2, 0.35, 0.5, 0.65];
+
+const getFilterDataFromSigma = (allData, sigma, ...props) => {
+  var sliceIndeces = [
+    resolution * resolution * sigmaIndexMap[sigma],
+    resolution * resolution * sigmaIndexMap[sigma] + resolution * resolution,
+  ];
+  if (Object.keys(props).length != 0) {
+    return allData.slice(sliceIndeces[0], sliceIndeces[1]);
+  }
+  var converted2DData = convert1DArrayTo2D(
+    allData.slice(sliceIndeces[0], sliceIndeces[1]),
+    resolution,
+    resolution
+  );
+
+  var finalData = rotate90DegreesCounterClockwise(converted2DData).reverse();
+  return finalData;
+};
+
 async function main(
   expressionData: Float32Array,
   layoutDataX: Float32Array,
@@ -507,29 +558,7 @@ async function main(
     0, 100000, 10000, 8500, 8000, 7500, 7000, 6500, 6000, 5500, 5000, 3500,
     2500, 2000, 1500, 950, 700, 450, 300, 150, 100,
   ]);
-  var sigmaIndexMap = {
-    0: 0,
-    0.05: 1,
-    0.1: 2,
-    0.15: 3,
-    0.2: 4,
-    0.25: 5,
-    0.3: 6,
-    0.35: 7,
-    0.4: 8,
-    0.45: 9,
-    0.5: 10,
-    0.55: 11,
-    0.6: 12,
-    0.65: 13,
-    0.7: 14,
-    0.75: 15,
-    0.8: 16,
-    0.85: 17,
-    0.9: 18,
-    0.95: 19,
-    1: 20,
-  };
+
   // var params = new Float32Array([sigmaMap[sigmaa],scaleMin,scaleMax, sampleSize, lastIternation,resolution]);
   var params = new Float32Array([
     sigmaMap[sigmaa],
@@ -750,7 +779,7 @@ async function main(
   const dataOnlyResult = new Float32Array(
     dataOnlyResultBuff.getMappedRange().slice(0, dataOnlyResultBuff.size)
   );
-  console.log("data only result: " + dataOnlyResult.slice(0, 5));
+  // alert("data only result: " + dataOnlyResult.length);
   //console.log('reslut: '+result);
   resultBuff.unmap();
 
@@ -774,23 +803,23 @@ async function main(
   while (true) {
     ////console.log('lenght of the data: '+dataOnlyResult.length)
     ////console.log('dimenstions '+resolution*resolution*sigmaIndexMap[sigmaa]+" "+(resolution*resolution*sigmaIndexMap[sigmaa]+resolution*resolution))
-    var sliceIndeces = [
-      resolution * resolution * sigmaIndexMap[sigmaa],
-      resolution * resolution * sigmaIndexMap[sigmaa] + resolution * resolution,
-    ];
+    // var sliceIndeces = [
+    //   resolution * resolution * sigmaIndexMap[sigmaa],
+    //   resolution * resolution * sigmaIndexMap[sigmaa] + resolution * resolution,
+    // ];
     ////console.log('sliceindecies: '+sliceIndeces)
     ////console.log('values: '+dataOnlyResult.slice(sliceIndeces[0],sliceIndeces[0]+5))
     // alert(dataOnlyResult.length)
-    var converted2DData = convert1DArrayTo2D(
-      dataOnlyResult.slice(sliceIndeces[0], sliceIndeces[1]),
-      resolution,
-      resolution
-    );
+    // var converted2DData = convert1DArrayTo2D(
+    //   dataOnlyResult.slice(sliceIndeces[0], sliceIndeces[1]),
+    //   resolution,
+    //   resolution
+    // );
     ////console.log('inside draw plot')
     // console.log('normalize: '+x);
     // console.log('normalize: '+y);
     //console.log('2d array'+convert1DArrayTo2D(dataOnlyResult,resolution,resolution))
-    var finalData = rotate90DegreesCounterClockwise(converted2DData).reverse();
+    // var finalData = rotate90DegreesCounterClockwise(converted2DData).reverse();
     // const file = new Blob([finalData.toString()], {type: 'text/plain;charset=utf-8'});
     // const url = URL.createObjectURL(file);
     // const link = document.createElement('a');
@@ -800,29 +829,10 @@ async function main(
     // link.click();
     // console.log('output'+result[result.length-1]);
     // console.log(updatedLayoutsExpression)
-    var layout = {
-      width: 768,
-      height: 768,
-      showlegend: true,
-      margin: {
-        l: 70,
-        r: 70,
-        b: 70,
-        t: 70,
-        pad: 4,
-      },
-      legend: {
-        x: 0.8,
-        // xanchor: 'right',
-        y: 1.05,
-        // bgcolor: 'E2E2E2'
-        bgcolor: "transparent",
-      },
-      font: {
-        color: "black",
-        size: 12,
-      },
-    };
+
+    var finalData = getFilterDataFromSigma(dataOnlyResult, sigmaa);
+
+    var layout = plotlyLayout;
     // console.log(geneName)
     const applyGeneFilters = async (e) => {
       (
@@ -864,53 +874,6 @@ async function main(
     geneFilterDiv.addEventListener("click", applyGeneFilters);
     geneFilterResetDiv.addEventListener("click", applyGeneFilters);
     var f = 0;
-    // layout['updatemenus']= [{
-    //   x: 0,
-    //   y: 1.1,
-    //   yanchor: 'top',
-    //   buttons: [{
-    //       name: 'gene_filter',
-    //       method: 'restyle',
-    //       args: [(function() {
-    //         f+=1
-    //         alert(f)
-    //         var geneThreshold = document.getElementById('canvas-div01-text') as HTMLInputElement;
-    //         var geneThresholdValue = geneThreshold.value;
-    //         geneThreshold.value=f.toLocaleString();
-    //         var updatedLayoutsExpression = filterData(expressionData, normalize(x), normalize(y), geneName, geneThresholdValue)
-    //         return {'x': [normalize(x), updatedLayoutsExpression['layoutDataX']], 'y':[normalize(y), updatedLayoutsExpression['layoutDataY']], 'text': [geneName, updatedLayoutsExpression['geneName']]}
-    //     })()],
-    //       // args: [],
-    //     //   args: [[], [], function() {
-    //     //     const filteredData = filterData(expressionData, normalize(x), normalize(y), geneThresholdValue)
-
-    //     //     Plotly.restyle('canvas-div', [{
-    //     //         z: finalData,
-    //     //         colorscale: 'Jet',
-    //     //         colorbar: { len: 1, thickness: 10 },
-    //     //         thickness: 1,
-    //     //         type: 'heatmap',
-    //     //         hoverinfo: 'z',
-    //     //         name: 'heatmap',
-    //     //         zmin: scaleMin,
-    //     //         zmax: scaleMax
-    //     //     }, {
-    //     //         x: filteredData['layoutDataX'],
-    //     //         y: filteredData['layoutDataY'],
-    //     //         mode: 'markers+text',
-    //     //         type: 'scatter',
-    //     //         text: filteredData['expressionData'],
-    //     //         colorscale: 'Jet',
-    //     //         hoverinfo: 'text+z',
-    //     //         visible: 'legendonly',
-    //     //         name: 'Gene Name',
-    //     //         args: { z: filteredData.expressionData, exp: filteredData.expressionData }
-    //     //     }]);
-    //     // }],
-    //       label: 'Filter Gene'
-    //   }],
-    //   type:'buttons'
-    // }]
     if (lastIternation == 1) {
       heatMapdata = [
         {
@@ -937,7 +900,7 @@ async function main(
           hoverinfo: true,
           visible: "legendonly",
           name: "Gene Name",
-          args: { z: finalData, exp: summedExp },
+          args: { z: finalData, exp: summedExp, allZ: dataOnlyResult },
         },
       ];
       contourData = [
@@ -963,45 +926,55 @@ async function main(
           name: "Gene Name",
         },
       ];
-      drawSpecificPlot(heatMapdata, contourData, layout);
+
+      const searchIcon = {
+        width: 500,
+        height: 500,
+        path: "M511.7 481.1l-129.9-129.9C403.5 311.9 416 272.4 416 224c0-106-86-192-192-192S32 118 32 224s86 192 192 192c48.4 0 87.9-12.5 127.2-34.2l129.9 129.9c4.8 4.8 11.1 7.3 17.5 7.3s12.7-2.4 17.5-7.3c9.6-9.6 9.6-25.2 0-34.8zM224 352c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z",
+      };
+
+      const plotlyConfig = {
+        scrollZoom: true,
+        modeBarButtonsToAdd: [
+          {
+            name: "Search",
+            icon: searchIcon,
+            click: function () {
+              openSearchModal(); // Open the modal
+            },
+          },
+        ],
+        // modeBarButtonsToRemove: [
+        //   "pan2d",
+        //   "select2d",
+        //   "lasso2d",
+        //   "resetScale2d",
+        //   "zoomOut2d",
+        // ],
+      };
+      const geneNamesInformation = {
+        layoutX: normalize(x),
+        layoutY: normalize(y),
+        geneName: geneName,
+      };
+      store.set("geneNamesInformation", geneNamesInformation);
+      const props = {
+        sigmaIndexMap: sigmaIndexMap,
+        geneExpression: expressionData,
+        geneNames: geneName,
+        resolution: resolution,
+      };
+      console.log(heatMapdata);
+      drawSpecificPlot(
+        heatMapdata,
+        contourData,
+        layout,
+        plotlyConfig,
+        dataOnlyResult,
+        props
+      );
       drawAllSigmaPlot(heatMapdata, layout);
       drawTab1Plot(heatMapdata, layout);
-      // sliceIndeces = [resolution*resolution*sigmaIndexMap[0.1],(resolution*resolution*sigmaIndexMap[0.1]+resolution*resolution)];
-      // var stepsArray = []
-      // // sliceIndeces = [resolution*resolution*sigmaIndexMap[0.1],(resolution*resolution*sigmaIndexMap[0.1]+resolution*resolution)];
-      // for(var i=0;i<20;i++){
-      //   var arr = [
-      //     {
-      //       label: i/2,
-      //       method:'restyle',
-      //       args: ['z', rotate90DegreesCounterClockwise(convert1DArrayTo2D(dataOnlyResult.slice(resolution*resolution*i,resolution*resolution*(i+1)),resolution,resolution)).reverse()]
-      //     }
-      //   ]
-      //   stepsArray.push(arr);
-      // }
-      // console.log('stepsarray'+stepsArray)
-      // console.log('converted array: '+rotate90DegreesCounterClockwise(convert1DArrayTo2D(dataOnlyResult.slice(resolution*resolution*0,resolution*resolution*0+resolution*resolution),resolution,resolution)).reverse().length)
-      // layout['sliders']= [{
-      //   currentvalue: {
-      //     visible: true,
-      //     xanchor: 'right',
-      //     font: {size: 5, color: '#666'}
-      //   },
-      //   steps:
-      //   [{
-      //     label: 0,
-      //     method:'restyle',
-      //     // args: ['z', rotate90DegreesCounterClockwise(convert1DArrayTo2D(dataOnlyResult.slice(resolution*resolution*0,resolution*resolution*0+resolution*resolution),resolution,resolution)).reverse()]
-      //     args: ['z',rotate90DegreesCounterClockwise(convert1DArrayTo2D(dataOnlyResult.slice(resolution*resolution*0,resolution*resolution*0+resolution*resolution),resolution,resolution)).reverse()]
-      //   },
-      //   {
-      //     label: 1,
-      //     method:'restyle',
-      //     // args: ['z', rotate90DegreesCounterClockwise(convert1DArrayTo2D(dataOnlyResult.slice(resolution*resolution*1,resolution*resolution*(1)+resolution*resolution),resolution,resolution)).reverse()]
-      //     args: ['z',rotate90DegreesCounterClockwise(convert1DArrayTo2D(dataOnlyResult.slice(resolution*resolution*1,resolution*resolution*(1)+resolution*resolution),resolution,resolution)).reverse()]
-      //   }]
-      // }]
-      // console.log(layout)
       data = dataOnlyResult;
     } else if (lastIternation == 21) {
       tab2FinalData01 = finalData;
@@ -1034,7 +1007,7 @@ async function main(
           hoverinfo: true,
           visible: "legendonly",
           name: "Gene Name",
-          args: { z: finalData, exp: summedExp },
+          args: { z: finalData, exp: summedExp, allZ: dataOnlyResult },
         },
       ];
       drawTab2Plot01(tab2HeatMapdata01, layout);
@@ -1070,7 +1043,7 @@ async function main(
           hoverinfo: true,
           visible: "legendonly",
           name: "Gene Name",
-          args: { z: finalData, exp: summedExp },
+          args: { z: finalData, exp: summedExp, allZ: dataOnlyResult },
         },
       ];
       console.log("checking dimmensions");
@@ -1120,7 +1093,7 @@ async function main(
           hoverinfo: true,
           visible: "legendonly",
           name: "Gene Name",
-          args: { z: finalData, exp: summedExp },
+          args: { z: finalData, exp: summedExp, allZ: dataOnlyResult },
         },
       ];
       drawPathwayDetails(tab2HeatMapdata01, layout, dataOnlyResult);
@@ -1155,6 +1128,7 @@ var resolution = 256,
   selectionLen1 = 0,
   selectionLen2 = 0,
   selectedDataset = "GBM";
+var sigmaInput = document.getElementById("sigma_range") as HTMLInputElement;
 var data = new Float32Array(resolution * resolution * 20);
 var tab2data01 = new Float32Array(resolution * resolution * 20);
 var tab2data02 = new Float32Array(resolution * resolution * 20);
@@ -1336,45 +1310,16 @@ asyncFunc().then(() => {
       size: 12,
     },
   };
-  var sigmaInput = document.getElementById("sigma_range") as HTMLInputElement;
   var sigma = 0.5;
-  var sigmaIndexMap = {
-    0: 0,
-    0.05: 1,
-    0.1: 2,
-    0.15: 3,
-    0.2: 4,
-    0.25: 5,
-    0.3: 6,
-    0.35: 7,
-    0.4: 8,
-    0.45: 9,
-    0.5: 10,
-    0.55: 11,
-    0.6: 12,
-    0.65: 13,
-    0.7: 14,
-    0.75: 15,
-    0.8: 16,
-    0.85: 17,
-    0.9: 18,
-    0.95: 19,
-    1: 20,
-  };
   console.log(sigmaIndexMap);
   store.set("sigma", sigma);
   store.set("sigmaIndexMap", sigmaIndexMap);
   store.set("resolution", resolution);
   sigmaInput.addEventListener("change", () => {
     // callPagerAPI()
-    changeSigma(
-      sigmaInput,
-      data,
-      sigmaIndexMap,
-      sigma,
-      resolution,
-      lastIternation
-    );
+    changeSigma(sigmaInput, data, sigmaIndexMap, sigma, resolution);
+    sigma = +sigmaInput.value;
+    store.set("sigma", sigma);
   });
 
   // var maskedGT = document.getElementById("canvas-tab2-01-maskedGT") as PlotlyHTMLElement;
@@ -1533,6 +1478,78 @@ asyncFunc().then(() => {
     exportToHtml(img);
   });
 
+  // function quantizeFloat32Array(
+  //   array: Float32Array,
+  //   bitDepth: number = 8
+  // ): Uint8Array {
+  //   const scale = Math.pow(2, bitDepth) - 1;
+  //   const min = Math.min(...array);
+  //   const max = Math.max(...array);
+  //   const range = max - min;
+
+  //   // Normalize and quantize
+  //   const quantized = array.map((value) =>
+  //     Math.round(((value - min) / range) * scale)
+  //   );
+  //   return Uint8Array.from(quantized); // Convert to Uint8Array
+  // }
+
+  // function compressAndEncode(arrays: any[]): string {
+  //   const bitDepth = 8; // Quantize to 8 bits
+  //   const compressedArrays = arrays.map((array) =>
+  //     runLengthEncode(quantizeFloat32Array(array, bitDepth))
+  //   );
+
+  //   const combined = combineArrays(compressedArrays);
+  //   return encodeBase64(combined);
+  // }
+
+  function runLengthEncode(array: Uint8Array): Uint8Array {
+    const encoded: number[] = [];
+    let count = 1;
+
+    for (let i = 1; i < array.length; i++) {
+      if (array[i] === array[i - 1]) {
+        count++;
+      } else {
+        encoded.push(array[i - 1], count);
+        count = 1;
+      }
+    }
+
+    // Add the last value and count
+    encoded.push(array[array.length - 1], count);
+
+    return Uint8Array.from(encoded);
+  }
+  function combineArrays(arrays: Uint8Array[]): Uint8Array {
+    const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+    const combined = new Uint8Array(totalLength);
+
+    let offset = 0;
+    for (const arr of arrays) {
+      combined.set(arr, offset);
+      offset += arr.length;
+    }
+
+    return combined;
+  }
+  function encodeBase64(array: Uint8Array): string {
+    let binaryString = "";
+    const chunkSize = 65536; // Process in 64KB chunks
+
+    for (let i = 0; i < array.length; i += chunkSize) {
+      const chunk = array.subarray(i, i + chunkSize);
+      binaryString += String.fromCharCode(...chunk);
+    }
+
+    return btoa(binaryString);
+  }
+
+  function quantizeFloat32Array(input: any, scaleFactor = 100000): Uint16Array {
+    return new Uint16Array(input.map((value) => value * scaleFactor));
+  }
+
   // Select all input elements with the class 'save-geneterrain'
   const saveGTButtons = document.querySelectorAll(
     ".save-geneterrain"
@@ -1541,38 +1558,34 @@ asyncFunc().then(() => {
   var geneterrainProps: GeneTerrainProps;
   saveGTButtons.forEach((saveGT) => {
     saveGT.addEventListener("click", async () => {
-      var plotlyElement = document.getElementById(
-        "canvas-div"
-      ) as PlotlyHTMLElement;
-      Plotly.toImage("canvas-div", {
-        format: "png",
-        height: 400,
-        width: 600,
-      }).then(async function (dataUrl) {
-        console.log(dataUrl);
-
-        // Use the dataUrl directly in an <img> tag for preview
-        (document.createElement("imagePreview") as HTMLImageElement).src =
-          dataUrl;
-
-        // Extract the Base64 portion if you only need the Base64 data
-        const base64Image = dataUrl.split(",")[1];
-        console.log(base64Image); // This is the Base64-encoded image data
+      var sigmaFilteredGeneTerrains = selectedSigmas.map(async (siggma) => {
+        var currGeneTerrain: any = Array.from(
+          getFilterDataFromSigma(data, siggma, "skipRest")
+        );
+        // console.log(data);
+        // console.log(currGeneTerrain);
+        currGeneTerrain = quantizeFloat32Array(currGeneTerrain);
+        // const finalArray = compressAndEncode(sigmaFilteredGeneTerrains);
         // var blobContent = "";
+
         geneterrainProps = {
           cancerType: selectedDataset,
           resolution: resolution,
           sampleID: selection.toString(),
           scaleMin: scaleMin,
           scaleMax: scaleMax,
-          sigma: sigma,
+          sigma: siggma,
           // geneTerrain: await convertImageToBlob("canvas-div"),
-          geneTerrain: base64Image,
+          // geneTerrain: sigmaFilteredGeneTerrains.flat(),
+          geneTerrain: currGeneTerrain.toString(),
+          // geneTerrain2: sigmaFilteredGeneTerrains[1],
+          // geneTerrain3: sigmaFilteredGeneTerrains[2],
+          // geneTerrain4: sigmaFilteredGeneTerrains[3],
+          // geneTerrain5: sigmaFilteredGeneTerrains[4],
           userID: auth.currentUser.uid,
         };
+        console.log(geneterrainProps);
         // saveToOracleApex(geneterrainProps);
-        console.log(plotlyElement.data);
-        console.log(plotlyElement.layout);
         await addGeneTerrain(geneterrainProps);
         // saveToOracleApex(geneterrainProps);
       });
@@ -1839,7 +1852,6 @@ asyncFunc().then(() => {
   //   alert('clicked');
   // })
   $("#canvas-div").on("plotly_selected", (eventData) => {
-    alert("click done");
     console.log(eventData);
     extractBarPlot(graphDiv);
   });
@@ -2075,10 +2087,10 @@ asyncFunc().then(() => {
         " gene: " +
         geneName.length
     );
-    console.log("layoutx: " + layoutDataX);
-    console.log("layouty: " + layoutDataY);
-    console.log("expression data: " + expressionData);
-    console.log("gene name: " + geneName);
+    console.log("layoutx: " + layoutDataX.slice(0, 10));
+    console.log("layouty: " + layoutDataY.slice(0, 10));
+    console.log("expression data: " + expressionData.slice(0, 10));
+    console.log("gene name: " + geneName.slice(0, 10));
     // var outcome=await main(expressionData, layoutDataX, layoutDataY, geneName, sigma, showGene, scaleMin, scaleMax, resolution, selection.length, lastIternation, data, selectionLen, summedExp) as unknown as Float32Array;
     (await main(
       expressionData,

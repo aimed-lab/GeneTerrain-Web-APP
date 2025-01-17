@@ -20,17 +20,34 @@ import fetchGeneTerrainData from "../utilities/getFirebaseGeneTerrains";
 
 const GeneTerrainCards = () => {
   const [data, setData] = useState(null);
+  const [allData, setAllData] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleButtonClick = async () => {
     const output = await fetchGeneTerrainData();
-    if (output) setData(output);
+    if (output) {
+      setData(output.filter((curr) => curr.sigma == 0.5));
+      setAllData(output);
+    }
     onOpen();
   };
 
   const handleCardClick = (item) => {
+    if (!allData) return;
+
+    // Filter allData for objects matching the item's userID
+    const userGeneTerrains = allData
+      .filter(
+        (dataItem) =>
+          dataItem.userID === item.userID && dataItem.sampleID == item.sampleID
+      )
+      .map((dataItem) => dataItem.geneTerrain);
+
+    // Add the geneTerrain array to the item object
+    const updatedItem = { ...item, geneTerrains: userGeneTerrains };
+    console.log(updatedItem);
     // Save the card data to localStorage
-    sessionStorage.setItem("selectedItem", JSON.stringify(item));
+    sessionStorage.setItem("selectedItem", JSON.stringify(updatedItem));
     window.open("/card-details.html", "_blank");
   };
 

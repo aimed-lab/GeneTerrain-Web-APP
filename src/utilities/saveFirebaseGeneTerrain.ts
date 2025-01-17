@@ -35,7 +35,7 @@ async function addGeneTerrain(data: GeneTerrainProps) {
     };
 
     // Add document to Firestore
-    const docRef = await addDoc(collection(db, "geneTerrains"), docData);
+    const docRef = await addDoc(collection(db, "geneTerrains"), data);
     // AlertMessage("Success");
     console.log("Document written with ID: ", docRef.id);
   } catch (error) {

@@ -10,6 +10,8 @@ import {
 import OpenSeadragon from "openseadragon";
 import { drawDensityPlot } from "./density_plot";
 import { runPager } from "./pager/pager";
+import { plotlyRelayout } from "./utilities/PlotlyUtility";
+import renderHeatmap from "./components/dynamicLayoutPixi";
 
 var specificLayout,
   allSigmaLayout,
@@ -30,27 +32,44 @@ var customColorScale = [
 ];
 var xold = 0;
 var helperWidget = document.getElementById("helperWidget");
-export async function drawSpecificPlot(hMdata, cData, layout) {
-  heatMapdata = hMdata;
+export async function drawSpecificPlot(
+  hMdata,
+  cData,
+  layout,
+  plotlyConfig,
+  data,
+  props
+) {
+  // alert("inside drawSpecificPlot");
+  // console.log(hMdata);
+  heatMapdata = structuredClone(hMdata);
   contourData = cData;
   specificLayout = JSON.parse(JSON.stringify(layout));
   specificLayout["paper_bgcolor"] = "transparent";
   specificLayout["plot_bgcolor"] = "transparent";
   specificLayout["modebar"] = { bgcolor: "transparent", color: "black" };
-  // specificLayout['title']={
-  //     text:'<br>Plot Title',
-  //     font: {
-  //       size: 24,
-  //       color: '#7f7f7f'
-  //     },
-  //     xref: 'paper',
-  //   }
+  (specificLayout["mapbox"] = {
+    style: "white-bg", // Remove map tiles, keeping only the background
+    center: { lon: -74.0, lat: 40.7 }, // Initial center of the map
+    zoom: 9, // Initial zoom level
+  }),
+    // showing filter div
+    (document.getElementById("canvas-div01-textboxbutton").style.display =
+      "block");
 
-  // showing filter div
-  document.getElementById("canvas-div01-textboxbutton").style.display = "block";
-  Plotly.newPlot("canvas-div", heatMapdata, specificLayout, {
-    scrollZoom: true,
-  })
+  const tempFileterdData = filterGeneData(
+    heatMapdata[1].x,
+    heatMapdata[1].y,
+    props.geneNames,
+    props.geneExpression,
+    0
+  );
+  console.log(tempFileterdData);
+  heatMapdata[1].x = tempFileterdData.filteredX;
+  heatMapdata[1].y = tempFileterdData.filteredY;
+  heatMapdata[1].text = tempFileterdData.filteredGeneName;
+  console.log(heatMapdata);
+  Plotly.newPlot("canvas-div", heatMapdata, specificLayout, plotlyConfig)
     .then((gd) => {
       heatMapdata[1]["visible"] = false;
       Plotly.toImage(gd, { width: 768, height: 768 }).then((url) => {
@@ -65,14 +84,28 @@ export async function drawSpecificPlot(hMdata, cData, layout) {
         .getElementById("canvas-div01-textboxbutton")
         .scrollIntoView({ behavior: "smooth", block: "center" });
     });
-  Plotly.newPlot("canvas-contour-div", contourData, specificLayout).then(
-    (gd) => {
-      Plotly.toImage(gd, { width: 768, height: 768 }).then((url) => {
-        var img = document.getElementById("a2") as HTMLAnchorElement;
-        img.href = url;
-      });
-    }
-  );
+  Plotly.newPlot(
+    "canvas-contour-div",
+    contourData,
+    plotlyConfig,
+    specificLayout
+  ).then((gd) => {
+    Plotly.toImage(gd, { width: 768, height: 768 }).then((url) => {
+      var img = document.getElementById("a2") as HTMLAnchorElement;
+      img.href = url;
+    });
+  });
+  // renderHeatmap(
+  //   "canvas-div",
+  //   heatMapdata[1].x,
+  //   heatMapdata[1].y,
+  //   heatMapdata[0].z,
+  //   heatMapdata[1].text
+  // );
+  props["heatMapdata"] = structuredClone(hMdata);
+  console.log(heatMapdata);
+  console.log(props);
+  plotlyRelayout("canvas-div", data, props);
   // drawDensityPlot();
 }
 
@@ -391,14 +424,7 @@ export async function updateExpDataInPlot(
   Plotly.update("canvas-tab2-01", t1, l1, 1);
   Plotly.update("canvas-tab2-02", t2, l2, 1);
 }
-export function changeSigma(
-  element,
-  data,
-  sigmaIndexMap,
-  sigma,
-  resolution,
-  lastIternation
-) {
+export function changeSigma(element, data, sigmaIndexMap, sigma, resolution) {
   sigma = +element.value;
   if (sigma == 1) sigma = 0.95;
   console.log("changing sigma");
@@ -467,17 +493,22 @@ export function changeSigma(
 }
 
 export var changeSigmaCustomDiv = async (
+  div,
   data,
   sigmaIndexMap,
   sigma,
   resolution,
-  lastIternation
+  heatMapInfo,
+  geneExpression,
+  geneName,
+  zoomLevel
 ) => {
   var sigmaDiv = document.getElementById("sigma_range") as HTMLInputElement;
+  sigmaDiv.value = sigma;
   if (sigma >= 1) sigma = 0.95;
-  if (sigma <= 0) sigma = 0;
-  console.log("changing sigma");
-  console.log(data1);
+  if (sigma <= 0) sigma = 0.05;
+  // console.log("changing sigma");
+  // console.log(data1);
   console.log(resolution, sigmaIndexMap, sigma);
   var sliceIndeces = [
     resolution * resolution * sigmaIndexMap[sigma],
@@ -491,22 +522,36 @@ export var changeSigmaCustomDiv = async (
     resolution
   );
   var finalData = rotate90DegreesCounterClockwise(converted2DData).reverse();
+  heatmapcopy = heatMapInfo;
+  // console.log(heatMapInfo);
+  console.log(geneName);
+  const filteredScatterdData = filterGeneData(
+    heatMapInfo[1].x,
+    heatMapInfo[1].y,
+    geneName,
+    geneExpression,
+    zoomLevel
+  );
+  console.log(filteredScatterdData);
   if (heatmapcopy != undefined) {
-    heatmapcopy[0].z = finalData;
-    Plotly.newPlot("canvas-tab2-01-maskedGT", heatmapcopy, layoutcopy).then(
-      (gd) => {
-        Plotly.toImage(gd, { width: 768, height: 768 }).then((url) => {
-          var img = document.getElementById("a4") as HTMLAnchorElement;
-          img.href = url;
-        });
-      }
+    // heatmapcopy[0].z = finalData;
+    Plotly.update(div, { z: [finalData] }, {}, [0]);
+    Plotly.update(
+      div,
+      {
+        x: filteredScatterdData.filteredX,
+        y: filteredScatterdData.filteredY,
+        text: [filteredScatterdData.filteredGeneName],
+      },
+      {},
+      [1]
     );
-    await Plotly.toImage("canvas-tab2-01-maskedGT", {
-      name: "image",
-      format: "png",
-      height: 400,
-      width: 400,
-    });
+    // await Plotly.toImage("canvas-tab2-01-maskedGT", {
+    //   name: "image",
+    //   format: "png",
+    //   height: 400,
+    //   width: 400,
+    // });
   }
 };
 
@@ -570,4 +615,54 @@ function generateArray1() {
     array.push(...sequence); // Append the sequence to the array 256 times
   }
   return array;
+}
+
+function filterGeneData(x, y, gene_name, geneExpression, zoomLevel) {
+  // Ensure zoomLevel is within the expected range
+  console.log(gene_name[33]);
+  console.log(gene_name.length);
+  const absZoomLevel = Math.abs(zoomLevel);
+  if (absZoomLevel < 0 || absZoomLevel > 5) {
+    throw new Error("zoomLevel must be between -5 and 5");
+  }
+
+  // Check for array length consistency
+  if (
+    x.length !== y.length ||
+    y.length !== gene_name.length ||
+    gene_name.length !== geneExpression.length
+  ) {
+    throw new Error("Array lengths do not match.");
+  }
+
+  // Calculate the percentage of geneExpression to include
+  const percentage = [0.05, 0.1, 0.2, 0.5, 0.7, 1.0][absZoomLevel];
+
+  // Find the threshold for geneExpression based on the percentage
+  const sortedGeneExpression = [...geneExpression].sort((a, b) => b - a);
+  const cutoffIndex = Math.floor(sortedGeneExpression.length * percentage);
+  const cutoffValue = sortedGeneExpression[cutoffIndex - 1];
+
+  // Filter the data based on the cutoff value
+  const filteredIndices = geneExpression
+    .map((value, index) => (value >= cutoffValue ? index : -1))
+    .filter((index) => index !== -1);
+
+  console.log("filteredIndices:", filteredIndices);
+
+  const filteredX = filteredIndices.map((index) => x[index]);
+  const filteredY = filteredIndices.map((index) => y[index]);
+  var filteredGeneName = [];
+  filteredIndices.forEach((index) => {
+    filteredGeneName.push(gene_name[index]);
+  });
+  filteredIndices.map((index) => gene_name[index]);
+
+  const filteredGeneExpression = filteredIndices.map(
+    (index) => geneExpression[index]
+  );
+
+  console.log("Filtered gene names:", filteredGeneName);
+
+  return { filteredX, filteredY, filteredGeneName, filteredGeneExpression };
 }

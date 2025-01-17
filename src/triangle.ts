@@ -22,7 +22,7 @@ export const shaders = () => {
       output.color = color;
       return output;
     }
-  `
+  `;
 
   const fragment = `
   @group(0) @binding(0) var mySampler: sampler;
@@ -34,7 +34,7 @@ export const shaders = () => {
   ) -> @location(0) vec4<f32> {
     return textureSample(myTexture, mySampler, color);
   }
-  `
+  `;
 
   const compute = `
   
@@ -141,6 +141,6 @@ export const shaders = () => {
   //   }
   }
   
-  `
-  return {vertex, fragment, compute}
+  `;
+  return { vertex, fragment, compute };
 };

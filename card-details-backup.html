@@ -18,7 +18,7 @@
     }
     #map {
       width: 70%;
-      height: 70vh; /* Adjust height to fit screen */
+      height: 70vh;
       border: 1px solid #ccc;
       border-radius: 10px;
       box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
@@ -41,7 +41,7 @@
     }
   </style>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       // Retrieve the item object from sessionStorage
       const item = JSON.parse(sessionStorage.getItem("selectedItem"));
 
@@ -49,21 +49,55 @@
         document.body.innerHTML = `<p style="text-align:center;">No data available to display!</p>`;
         return;
       }
+      // Extract Base64 content from item object
+      const lowQualityImage = item.low;
+      const lowMedQualityImage = item.lowmed;
+      const mediumQualityImage = item.med;
+      const highmedQualityImage = item.highmed;
+      const highQualityImage = item.high;
+
+      alert(highmedQualityImage);
 
       // Initialize the map
       const map = L.map("map", {
         crs: L.CRS.Simple,
-        minZoom: -5,
-        maxZoom: 2
+        minZoom: -1,
+        maxZoom: 5,
+        zoomSnap: 1,
       });
 
-      // GeneTerrain Image as Map Overlay
-      const imageUrl = `data:image/png;base64,${item.geneTerrain}`;
-      const imageBounds = [[0, 0], [1000, 1000]]; // Adjust these bounds as needed
+      // Adjust the image bounds
+      const imageWidth = 800; // Replace with your image's actual width
+      const imageHeight = 600; // Replace with your image's actual height
+      const imageBounds = [[0, 0], [imageHeight, imageWidth]];
 
-      L.imageOverlay(imageUrl, imageBounds).addTo(map);
-      map.fitBounds(imageBounds);
+      // Add the low-quality image initially
+      let currentOverlay = L.imageOverlay(`${lowQualityImage}`, imageBounds).addTo(map);
+      map.setView([imageHeight/2, imageWidth/2], 1);
 
+      // Switch images based on zoom level
+      map.on("zoomend", () => {
+        const zoomLevel = map.getZoom();
+
+        // Remove the current overlay
+        if (currentOverlay) {
+          map.removeLayer(currentOverlay);
+        }
+
+        // Add the appropriate quality image based on zoom level
+        if (zoomLevel >= 4) {
+          currentOverlay = L.imageOverlay(`${highQualityImage}`, imageBounds).addTo(map);
+        } else if (zoomLevel >= 3) {
+          currentOverlay = L.imageOverlay(`${highmedQualityImage}`, imageBounds).addTo(map);
+        } else if (zoomLevel >= 2) {
+          currentOverlay = L.imageOverlay(`${mediumQualityImage}`, imageBounds).addTo(map);
+        } else if (zoomLevel >= 1) {
+          currentOverlay = L.imageOverlay(`${lowMedQualityImage}`, imageBounds).addTo(map);
+        } else {
+          currentOverlay = L.imageOverlay(`${lowQualityImage}`, imageBounds).addTo(map);
+        }
+      });
+      
       // Render details
       const detailsContainer = document.getElementById("details-container");
       detailsContainer.innerHTML = `

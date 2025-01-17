@@ -42,66 +42,114 @@
   </style>
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
-      // Retrieve the item object from sessionStorage
-      const item = JSON.parse(sessionStorage.getItem("selectedItem"));
+  // Retrieve the item object from sessionStorage
+  const item = JSON.parse(sessionStorage.getItem("selectedItem"));
 
-      if (!item) {
-        document.body.innerHTML = `<p style="text-align:center;">No data available to display!</p>`;
-        return;
-      }
-      // Extract Base64 content from item object
-      const lowQualityImage = item.low;
-      const mediumQualityImage = item.med;
-      const highQualityImage = item.high;
+  if (!item) {
+    document.body.innerHTML = `<p style="text-align:center;">No data available to display!</p>`;
+    return;
+  }
+  console.log(item)
+  // Extract Base64 content from item object
+  const lowQualityImage = item.geneTerrains[0];
+  const lowMedQualityImage = item.geneTerrains[1];
+  const mediumQualityImage = item.geneTerrains[2];
+  const highmedQualityImage = item.geneTerrains[3];
+  const highQualityImage = item.geneTerrains[4];
 
-      // Initialize the map
-      const map = L.map("map", {
-        crs: L.CRS.Simple,
-        minZoom: -5,
-        maxZoom: 2,
-        zoomSnap: 1,
-      });
+  alert(highmedQualityImage);
 
-      // Adjust the image bounds
-      const imageWidth = 800; // Replace with your image's actual width
-      const imageHeight = 600; // Replace with your image's actual height
-      const imageBounds = [[0, 0], [imageHeight, imageWidth]];
+  // Example gene data for testing
+  const layoutx = [95, 175, 255, 335, 415, 495, 575, 655, 705, 125, 205, 285, 365, 445, 525, 605, 685, 105, 185, 265]; // X coordinates of genes
+  const layouty = [105, 145, 185, 225, 265, 305, 345, 385, 425, 465, 135, 175, 215, 255, 295, 335, 375, 415, 455, 495]; // Y coordinates of genes
+  const geneNames = ["GeneA", "GeneB", "GeneC", "GeneD", "GeneE", "GeneF", "GeneG", "GeneH", "GeneI", "GeneJ", "GeneK", "GeneL", "GeneM", "GeneN", "GeneO", "GeneP", "GeneQ", "GeneR", "GeneS", "GeneT"]; // Gene names
 
-      // Add the low-quality image initially
-      let currentOverlay = L.imageOverlay(`${lowQualityImage}`, imageBounds).addTo(map);
-      map.setView([imageHeight/2, imageWidth/2], 1);
+  let displayedMarkers = [];
 
-      // Switch images based on zoom level
-      map.on("zoomend", () => {
-        const zoomLevel = map.getZoom();
+  // Initialize the map
+  const map = L.map("map", {
+    crs: L.CRS.Simple,
+    minZoom: -1,
+    maxZoom: 5,
+    zoomSnap: 1,
+  });
 
-        // Remove the current overlay
-        if (currentOverlay) {
-          map.removeLayer(currentOverlay);
-        }
+  // Adjust the image bounds
+  const imageWidth = 800; // Replace with your image's actual width
+  const imageHeight = 600; // Replace with your image's actual height
+  const imageBounds = [[0, 0], [imageHeight, imageWidth]];
 
-        // Add the appropriate quality image based on zoom level
-        if (zoomLevel <= -2) {
-          currentOverlay = L.imageOverlay(`${lowQualityImage}`, imageBounds).addTo(map);
-        } else if (zoomLevel <= -1) {
-          currentOverlay = L.imageOverlay(`${mediumQualityImage}`, imageBounds).addTo(map);
-        } else {
-          currentOverlay = L.imageOverlay(`${highQualityImage}`, imageBounds).addTo(map);
-        }
-      });
+  // Add the low-quality image initially
+  let currentOverlay = L.imageOverlay(`${lowQualityImage}`, imageBounds).addTo(map);
+  map.setView([imageHeight / 2, imageWidth / 2], 1);
 
-      // Render details
-      const detailsContainer = document.getElementById("details-container");
-      detailsContainer.innerHTML = `
-        <div class="detail-item"><strong>Sample ID:</strong> ${item.sampleID}</div>
-        <div class="detail-item"><strong>Resolution:</strong> ${item.resolution}</div>
-        <div class="detail-item"><strong>Scale Min:</strong> ${item.scaleMin}</div>
-        <div class="detail-item"><strong>Scale Max:</strong> ${item.scaleMax}</div>
-        <div class="detail-item"><strong>Sigma:</strong> ${item.sigma}</div>
-        <div class="detail-item"><strong>Cancer Type:</strong> ${item.cancerType}</div>
-      `;
-    });
-  </script>
+  // Function to add gene scatter points
+  const addGenePoints = (count) => {
+    // Clear existing markers
+    displayedMarkers.forEach(marker => map.removeLayer(marker));
+    displayedMarkers = [];
+
+    // Add points up to the specified count
+    for (let i = 0; i < count && i < layoutx.length; i++) {
+      const x = layoutx[i];
+      const y = layouty[i];
+      const geneName = geneNames[i];
+
+      const marker = L.circleMarker([y, x], {
+        radius: 5,
+        color: "blue",
+        fillColor: "blue",
+        fillOpacity: 0.8,
+      }).addTo(map);
+
+      marker.bindPopup(`<strong>Gene:</strong> ${geneName}`);
+      displayedMarkers.push(marker);
+    }
+  };
+
+  // Switch images and update points based on zoom level
+  map.on("zoomend", () => {
+    const zoomLevel = map.getZoom();
+
+    // Remove the current overlay
+    if (currentOverlay) {
+      map.removeLayer(currentOverlay);
+    }
+
+    // Add the appropriate quality image based on zoom level
+    if (zoomLevel >= 4) {
+      currentOverlay = L.imageOverlay(`${highQualityImage}`, imageBounds).addTo(map);
+      addGenePoints(20); // Show all 20 points
+    } else if (zoomLevel >= 3) {
+      currentOverlay = L.imageOverlay(`${highmedQualityImage}`, imageBounds).addTo(map);
+      addGenePoints(15); // Show 15 points
+    } else if (zoomLevel >= 2) {
+      currentOverlay = L.imageOverlay(`${mediumQualityImage}`, imageBounds).addTo(map);
+      addGenePoints(10); // Show 10 points
+    } else if (zoomLevel >= 1) {
+      currentOverlay = L.imageOverlay(`${lowMedQualityImage}`, imageBounds).addTo(map);
+      addGenePoints(5); // Show 5 points
+    } else {
+      currentOverlay = L.imageOverlay(`${lowQualityImage}`, imageBounds).addTo(map);
+      addGenePoints(5); // Show 5 points
+    }
+  });
+
+  // Initial display of points
+  addGenePoints(5);
+
+  // Render details
+  const detailsContainer = document.getElementById("details-container");
+  detailsContainer.innerHTML = `
+    <div class="detail-item"><strong>Sample ID:</strong> ${item.sampleID}</div>
+    <div class="detail-item"><strong>Resolution:</strong> ${item.resolution}</div>
+    <div class="detail-item"><strong>Scale Min:</strong> ${item.scaleMin}</div>
+    <div class="detail-item"><strong>Scale Max:</strong> ${item.scaleMax}</div>
+    <div class="detail-item"><strong>Sigma:</strong> ${item.sigma}</div>
+    <div class="detail-item"><strong>Cancer Type:</strong> ${item.cancerType}</div>
+  `;
+});
+    </script>
 <script defer src="runtime.bundle.js"></script><script defer src="index.bundle.js"></script><script defer src="main.bundle.js"></script></head>
 <body>
   <!-- Map container -->
