@@ -1,0 +1,94 @@
+Component Flow Starting from App.tsx
+App.tsx:
+Entry point of the application.
+Wraps the entire app with:
+ChakraProvider: Provides theming and styling using Chakra UI.
+AuthProvider: Manages user authentication state.
+PremiumProvider: Manages premium feature access.
+Includes the Navbar component for navigation.
+Defines routes using react-router-dom to render different components based on the URL.
+Routes Defined in App.tsx
+/ (Home Page):
+
+Component: HomeContent
+Displays the main dashboard or landing page.
+Likely includes:
+Filters for datasets or samples.
+Links to other features.
+/features (Features Page):
+
+Component: FeaturesContent
+Provides information about the features of the app.
+/about (About Page):
+
+Component: AboutContent
+Displays information about the app or the team behind it.
+/contact (Contact Page):
+
+Component: ContactContent
+Provides a way for users to contact the team or support.
+/login (Login Page):
+
+Component: LoginPage
+Allows users to log in to their accounts.
+Likely includes:
+A form for entering email and password.
+A link to the registration page.
+/register (Register Page):
+
+Component: RegisterPage
+Allows new users to create an account.
+Likely includes:
+A form for entering user details (e.g., name, email, password).
+/custom (Custom Gene Terrain Page):
+
+Component: CustomGeneTerrain
+Provides tools for custom visualizations or analyses.
+Likely includes:
+A form or interface for uploading custom data.
+Visualization components for rendering the custom data.
+/gbm-analysis (GBM Analysis Page):
+
+Component: GBMAnalysis
+Displays analysis tools or visualizations for GBM (Glioblastoma Multiforme) data.
+Likely includes:
+A table or list of GBM samples.
+Visualization components like GaussianMap.
+Nested Components
+Navbar:
+
+Appears on all pages.
+Provides navigation links to different routes (e.g., Home, Features, About, Contact).
+AuthProvider:
+
+Wraps the app to manage user authentication state.
+Makes authentication-related data (e.g., isLoggedIn, user) available to all components.
+PremiumProvider:
+
+Wraps the app to manage premium feature access.
+Makes premium-related data (e.g., isPremiumUser) available to all components.
+Layout (if used in any route):
+
+Provides a consistent layout for pages.
+Likely includes:
+A header.
+A footer.
+A main content area.
+Visualization Components
+CustomGeneTerrain:
+
+Likely includes:
+A form for uploading custom data.
+A visualization component like GaussianMap.
+GBMAnalysis:
+
+Likely includes:
+A table of GBM samples (e.g., SamplesTable).
+Visualization components like GaussianMap for rendering sample data.
+Summary
+App.tsx is the entry point and defines the overall structure of the app.
+Routes determine which component is rendered based on the URL.
+Providers (AuthProvider, PremiumProvider) manage global state and make it available to all components.
+Navbar provides navigation across the app.
+Each route corresponds to a specific page component, which may include nested components for specific functionality.
+This flow should help you understand how the components are connected and how the application is structured. Let me know if you'd like me to expand on any specific part!

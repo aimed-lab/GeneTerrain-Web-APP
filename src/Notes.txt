@@ -1,0 +1,3 @@
+Files to be remove
+
+1. /Users/harimerla/Documents/GeneTerrain/GenTerrain_AI/gene-terrain/src/components/samples/SampleFilters.tsx
