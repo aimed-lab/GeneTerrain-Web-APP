@@ -26,7 +26,6 @@ const GeneVisualization: React.FC = () => {
     selectedSamples,
     isMapVisible,
     activeSelectionSource,
-    activeSampleId,
     filteredSamples,
   } = useSamplesContext();
   const [points, setPoints] = useState<any[]>([]);
@@ -45,24 +44,13 @@ const GeneVisualization: React.FC = () => {
       setIsLoadingPoints(true);
 
       let sampleToVisualize = null;
-      if (
-        activeSelectionSource === "scatter" &&
-        activeSampleId &&
-        selectedDataset
-      ) {
-        // Find the sample in the current dataset or filteredSamples
-        sampleToVisualize =
-          selectedDataset.samples.find(
-            (s) => s.sampleid === activeSampleId || s.id === activeSampleId
-          ) ||
-          filteredSamples.find(
-            (s) => s.sampleid === activeSampleId || s.id === activeSampleId
-          );
-      } else if (selectedSamples.length > 0) {
+      console.log("[GeneVisualization] selectedSamples:", selectedSamples);
+      if (selectedSamples.length > 0) {
         sampleToVisualize = selectedSamples[0]; // Use the first selected sample from table
       }
 
       setVisualizedSample(sampleToVisualize);
+      console.log("[GeneVisualization] visualizedSample:", sampleToVisualize);
 
       if (!sampleToVisualize) {
         setPoints([]);
@@ -70,14 +58,15 @@ const GeneVisualization: React.FC = () => {
         return;
       }
 
-      // Fetch gene expression points for the selected sample
-      // Always fetch from API for the selected sample
+      // Fetch gene expression points for the selected samples
+      const sampleIds = selectedSamples.map((s) => s.sampleid || s.id);
       const fetchedPoints = await fetchGeneExpressionData(
-        [sampleToVisualize.sampleid || sampleToVisualize.id],
+        sampleIds,
         selectedDataset,
         100
       );
       setPoints(fetchedPoints);
+      console.log("[GeneVisualization] fetched points:", fetchedPoints);
       setIsLoadingPoints(false);
     };
 
@@ -85,7 +74,6 @@ const GeneVisualization: React.FC = () => {
   }, [
     isMapVisible,
     activeSelectionSource,
-    activeSampleId,
     selectedSamples,
     selectedDataset,
     filteredSamples,

@@ -60,8 +60,6 @@ interface SamplesContextType {
   clearColumnFilters: () => void;
   activeSelectionSource: "scatter" | "table" | null;
   setActiveSelectionSource: (source: "scatter" | "table" | null) => void;
-  activeSampleId: string | null;
-  setActiveSampleId: (id: string | null) => void;
 }
 
 const SamplesContext = createContext<SamplesContextType | undefined>(undefined);
@@ -100,11 +98,10 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
     Map<string, ColumnFilterItem>
   >(new Map());
 
-  // Add new states for active selection source and active sample ID
+  // Add new states for active selection source
   const [activeSelectionSource, setActiveSelectionSource] = useState<
     "scatter" | "table" | null
   >(null);
-  const [activeSampleId, setActiveSampleId] = useState<string | null>(null);
 
   // Reset selected samples when dataset changes
   useEffect(() => {
@@ -456,8 +453,6 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
     clearColumnFilters,
     activeSelectionSource,
     setActiveSelectionSource,
-    activeSampleId,
-    setActiveSampleId,
   };
 
   return (

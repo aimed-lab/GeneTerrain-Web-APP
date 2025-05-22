@@ -42,8 +42,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     filteredSamples,
     activeSelectionSource,
     setActiveSelectionSource,
-    activeSampleId,
-    setActiveSampleId,
     setSelectedSampleIds,
   } = useSamplesContext();
 
@@ -111,6 +109,15 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
           const sampleId = sample.sampleid || String(sample.id);
           const metadata = [
             `ID: ${sampleId}`,
+            sample.name && `Name: ${sample.name}`,
+            sample.description && `Description: ${sample.description}`,
+            sample.condition && `Condition: ${sample.condition}`,
+            sample.date && `Date: ${sample.date}`,
+            sample.project && `Project: ${sample.project}`,
+            sample.protocol && `Protocol: ${sample.protocol}`,
+            sample.organism && `Organism: ${sample.organism}`,
+            sample.platform && `Platform: ${sample.platform}`,
+            sample.notes && `Notes: ${sample.notes}`,
             sample.age && `Age: ${sample.age}`,
             sample.gender && `Gender: ${sample.gender}`,
             sample.subtype && `Subtype: ${sample.subtype}`,
@@ -155,7 +162,48 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
               .map(getCoordinates)
               .filter((coord): coord is [number, number] => coord !== null);
 
+            // Show sample count in legend
+            const count = categoryPoints.length;
+
             if (coords.length > 0) {
+              // Group separation: convex hull (fallback to bounding box)
+              let hullTrace = null;
+              if (coords.length >= 3) {
+                // Convex hull algorithm (Graham scan, simple for 2D)
+                const hull = getConvexHull(coords);
+                if (hull.length >= 3) {
+                  hullTrace = {
+                    x: hull.map(([x]) => x),
+                    y: hull.map(([, y]) => y),
+                    type: "scatter",
+                    mode: "lines",
+                    fill: "toself",
+                    fillcolor: getColorForCategory(category, categories) + "11", // transparent
+                    line: {
+                      color: getColorForCategory(category, categories),
+                      width: 1,
+                    },
+                    hoverinfo: "skip",
+                    showlegend: false,
+                  };
+                }
+              } else if (coords.length === 2) {
+                // Draw a line between two points
+                hullTrace = {
+                  x: [coords[0][0], coords[1][0]],
+                  y: [coords[0][1], coords[1][1]],
+                  type: "scatter",
+                  mode: "lines",
+                  line: {
+                    color: getColorForCategory(category, categories),
+                    width: 1,
+                  },
+                  hoverinfo: "skip",
+                  showlegend: false,
+                };
+              }
+              if (hullTrace) traces.push(hullTrace as ScatterData);
+
               traces.push({
                 x: coords.map(([x]) => x),
                 y: coords.map(([, y]) => y),
@@ -171,7 +219,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
                     width: isSelected ? 2 : 1,
                   },
                 },
-                name: `${category}${isSelected ? " (Selected)" : ""}`,
+                name: `${category} (n=${count})${
+                  isSelected ? " (Selected)" : ""
+                }`,
                 text: categoryPoints.map(createHoverText),
                 hoverinfo: "text",
               });
@@ -201,8 +251,23 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     const sampleId = event.points[0]?.text?.match(/ID: ([^<]+)/)?.[1];
     if (sampleId) {
       setActiveSelectionSource("scatter");
-      setActiveSampleId(sampleId);
       setSelectedSampleIds(new Set([sampleId]));
+    }
+  };
+
+  // Add Plot lasso/box selection handler
+  const handleLassoSelect = (event: any) => {
+    const selectedPoints = event.points || [];
+    const selectedIds = new Set<string>();
+    selectedPoints.forEach((point: any) => {
+      const sampleId = point.text?.match(/ID: ([^<]+)/)?.[1];
+      if (sampleId) {
+        selectedIds.add(sampleId);
+      }
+    });
+    if (selectedIds.size > 0) {
+      setActiveSelectionSource("scatter");
+      setSelectedSampleIds(selectedIds);
     }
   };
 
@@ -268,34 +333,12 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
             (trace as ScatterData).marker &&
             typeof (trace as ScatterData).marker === "object"
           ) {
-            if (activeSelectionSource === "scatter" && activeSampleId) {
-              const scatterTrace = trace as ScatterData;
-              const textArray = Array.isArray(scatterTrace.text)
-                ? scatterTrace.text
-                : [scatterTrace.text];
-              return Object.assign({}, scatterTrace, {
-                marker: Object.assign({}, scatterTrace.marker, {
-                  color: textArray.map((txt: string, i: number) =>
-                    txt.includes(`ID: ${activeSampleId}`)
-                      ? "#d62728"
-                      : Array.isArray(scatterTrace.marker?.color)
-                      ? scatterTrace.marker.color[i]
-                      : scatterTrace.marker?.color || "#1f77b4"
-                  ),
-                  size: textArray.map((txt: string, i: number) =>
-                    txt.includes(`ID: ${activeSampleId}`)
-                      ? 16
-                      : Array.isArray(scatterTrace.marker?.size)
-                      ? scatterTrace.marker.size[i]
-                      : scatterTrace.marker?.size || 8
-                  ),
-                }),
-              }) as ScatterData;
-            }
+            return trace as ScatterData;
           }
           return trace;
         })}
         onClick={handlePointClick}
+        onSelected={handleLassoSelect}
         layout={
           {
             showlegend: true,
@@ -332,12 +375,46 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
           responsive: true,
           displayModeBar: true,
           displaylogo: false,
-          modeBarButtonsToRemove: ["lasso2d", "select2d"],
         }}
         style={{ width: "100%", height: "100%" }}
       />
     </Box>
   );
 };
+
+// Add convex hull helper function at the top or bottom of the file
+function getConvexHull(points: [number, number][]): [number, number][] {
+  // Graham scan algorithm for 2D convex hull
+  if (points.length < 3) return points;
+  // Sort points lexicographically
+  const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (
+    o: [number, number],
+    a: [number, number],
+    b: [number, number]
+  ) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: [number, number][] = [];
+  for (const p of sorted) {
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+    )
+      lower.pop();
+    lower.push(p);
+  }
+  const upper: [number, number][] = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+    )
+      upper.pop();
+    upper.push(p);
+  }
+  upper.pop();
+  lower.pop();
+  return lower.concat(upper);
+}
 
 export default ScatterPlot;
