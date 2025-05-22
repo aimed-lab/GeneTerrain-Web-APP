@@ -109,6 +109,8 @@ export async function fetchGeneExpressionData(
       ),
     ]);
 
+    console.log("[fetchGeneExpressionData] geneDataArr:", geneDataArr);
+
     // Calculate average gene expression values across all selected samples
     const geneAverages: Record<string, number> = {};
     const geneCounts: Record<string, number> = {};
@@ -116,7 +118,7 @@ export async function fetchGeneExpressionData(
     geneDataArr.forEach((sampleGeneData) => {
       sampleGeneData.forEach((gene) => {
         const geneName = gene.gene_symbol;
-        const value = gene.value;
+        const value = Number(gene.value);
         if (isNaN(value) || value === null || value === undefined) return;
         if (!geneAverages[geneName]) {
           geneAverages[geneName] = value;
@@ -127,6 +129,12 @@ export async function fetchGeneExpressionData(
         }
       });
     });
+
+    console.log("[fetchGeneExpressionData] geneAverages:", geneAverages);
+    console.log(
+      "[fetchGeneExpressionData] layoutData (first 5):",
+      layoutData.slice(0, 5)
+    );
 
     Object.keys(geneAverages).forEach((geneName) => {
       if (geneCounts[geneName] > 0) {
@@ -146,6 +154,11 @@ export async function fetchGeneExpressionData(
       pathways: [],
       description: "",
     }));
+
+    console.log(
+      "[fetchGeneExpressionData] points (first 5):",
+      points.slice(0, 5)
+    );
 
     return normalizePoints(points);
   } catch (error) {
