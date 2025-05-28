@@ -166,44 +166,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
             const count = categoryPoints.length;
 
             if (coords.length > 0) {
-              // Group separation: convex hull (fallback to bounding box)
-              let hullTrace = null;
-              if (coords.length >= 3) {
-                // Convex hull algorithm (Graham scan, simple for 2D)
-                const hull = getConvexHull(coords);
-                if (hull.length >= 3) {
-                  hullTrace = {
-                    x: hull.map(([x]) => x),
-                    y: hull.map(([, y]) => y),
-                    type: "scatter",
-                    mode: "lines",
-                    fill: "toself",
-                    fillcolor: getColorForCategory(category, categories) + "11", // transparent
-                    line: {
-                      color: getColorForCategory(category, categories),
-                      width: 1,
-                    },
-                    hoverinfo: "skip",
-                    showlegend: false,
-                  };
-                }
-              } else if (coords.length === 2) {
-                // Draw a line between two points
-                hullTrace = {
-                  x: [coords[0][0], coords[1][0]],
-                  y: [coords[0][1], coords[1][1]],
-                  type: "scatter",
-                  mode: "lines",
-                  line: {
-                    color: getColorForCategory(category, categories),
-                    width: 1,
-                  },
-                  hoverinfo: "skip",
-                  showlegend: false,
-                };
-              }
-              if (hullTrace) traces.push(hullTrace as ScatterData);
-
               traces.push({
                 x: coords.map(([x]) => x),
                 y: coords.map(([, y]) => y),
@@ -381,40 +343,5 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     </Box>
   );
 };
-
-// Add convex hull helper function at the top or bottom of the file
-function getConvexHull(points: [number, number][]): [number, number][] {
-  // Graham scan algorithm for 2D convex hull
-  if (points.length < 3) return points;
-  // Sort points lexicographically
-  const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const cross = (
-    o: [number, number],
-    a: [number, number],
-    b: [number, number]
-  ) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const lower: [number, number][] = [];
-  for (const p of sorted) {
-    while (
-      lower.length >= 2 &&
-      cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
-    )
-      lower.pop();
-    lower.push(p);
-  }
-  const upper: [number, number][] = [];
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    const p = sorted[i];
-    while (
-      upper.length >= 2 &&
-      cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
-    )
-      upper.pop();
-    upper.push(p);
-  }
-  upper.pop();
-  lower.pop();
-  return lower.concat(upper);
-}
 
 export default ScatterPlot;
