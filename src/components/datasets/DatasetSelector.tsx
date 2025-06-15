@@ -12,8 +12,13 @@ import {
   Tooltip,
   FormControl,
   FormLabel,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Button,
 } from "@chakra-ui/react";
-import { FaDatabase, FaInfoCircle } from "react-icons/fa";
+import { FaDatabase, FaInfoCircle, FaChevronDown } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Dataset } from "../../types";
 import { useSamplesContext } from "../../context/SamplesContext";
@@ -138,13 +143,59 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
                     isDisabled={isLoading || localDatasets.length === 0}
                     _focus={{ borderColor: "geneTerrain.accent2" }}
                     borderColor="geneTerrain.border"
+                    sx={{
+                      "& option": {
+                        padding: "10px",
+                        fontSize: "md",
+                      },
+                    }}
                   >
                     {localDatasets.map((dataset) => (
                       <option key={dataset.id} value={dataset.id}>
-                        {dataset.name}
+                        {dataset.name} - {dataset.description}
                       </option>
                     ))}
                   </Select>
+
+                  {/* {selectedDataset && (
+                    <Box
+                      mt={2}
+                      p={3}
+                      bg="gray.50"
+                      borderRadius="md"
+                      borderLeft="4px solid"
+                      borderLeftColor="geneTerrain.primary"
+                    >
+                      <Flex justify="space-between" align="center">
+                        <Box>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="medium"
+                            color="geneTerrain.textPrimary"
+                          >
+                            {selectedDataset.name}
+                          </Text>
+                          <Text
+                            fontSize="sm"
+                            color="geneTerrain.textSecondary"
+                            mt={1}
+                          >
+                            {selectedDataset.description}
+                          </Text>
+                        </Box>
+                        <Badge
+                          bg="geneTerrain.primary"
+                          color="white"
+                          px={2}
+                          py={1}
+                          borderRadius="md"
+                          fontSize="xs"
+                        >
+                          {selectedDataset.samples.length} Samples
+                        </Badge>
+                      </Flex>
+                    </Box>
+                  )} */}
                 </Box>
               </Flex>
             </FormControl>
