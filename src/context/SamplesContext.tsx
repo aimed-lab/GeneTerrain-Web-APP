@@ -8,6 +8,7 @@ import React, {
 import { Sample, Dataset } from "../types";
 import { useToast } from "@chakra-ui/react";
 import { GBMDataFetcher } from "../modules/GBMDataModule/GBMDataFetcher";
+import { CancerDataFetcherFactory } from "../services/cancer/CancerDataFetcherFactory";
 
 interface ColumnFilterType {
   column: string | null;
@@ -80,6 +81,7 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterCondition, setFilterCondition] = useState<string | null>(null);
   const [isMapVisible, setIsMapVisible] = useState<boolean>(false);
+  const [isLoadingSamples, setIsLoadingSamples] = useState<boolean>(false);
   const toast = useToast();
 
   // Add states for UI filtering components
@@ -310,7 +312,8 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
     const isGBMDataset = selectedDataset.name === "Glioblastoma Multiforme";
 
-    if (isGBMDataset && gbmSamples.length === 0) {
+    // Only fetch if GBM samples are not already loaded and not currently loading
+    if (isGBMDataset && gbmSamples.length === 0 && !isLoadingGBM) {
       setIsLoadingGBM(true);
 
       const fetchGBMSamples = async () => {
@@ -318,48 +321,25 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
           const dataFetcher = new GBMDataFetcher();
           const rawGbmSamples = await dataFetcher.fetchAllSamples();
 
-          // Get all possible fields from all samples
-          const allFields = new Set<string>();
-          rawGbmSamples.forEach((sample) => {
-            Object.keys(sample).forEach((key) => allFields.add(key));
-          });
-
           // Standardize field names across samples
           const standardizedSamples = rawGbmSamples.map((sample) => {
-            // Create a consistent sample object with standardized field names
             const standardized: any = {};
-
-            // Map common alternative field names to standard ones
             const fieldMappings: Record<string, string> = {
-              // ID fields
               case_id: "patient_id",
               case_submitter_id: "patient_id",
               patient_barcode: "patient_id",
-
-              // Clinical fields
               gender: "gender",
               sex: "gender",
-
-              // Subtype/classification fields
               molecular_subtype: "subtype",
               glioma_subtype: "subtype",
-
-              // Status fields
               idh_mutation_status: "idh_status",
               mgmt_promoter_status: "mgmt_status",
             };
-
-            // Process all fields in the sample
             Object.entries(sample).forEach(([key, value]) => {
-              // Skip empty values
               if (value === null || value === undefined || value === "") return;
-
-              // Use mapped field name if available
               const standardKey = fieldMappings[key.toLowerCase()] || key;
               standardized[standardKey] = value;
             });
-
-            // Ensure required fields exist
             standardized.id =
               standardized.sampleid ||
               standardized.sample_id ||
@@ -368,15 +348,21 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
             standardized.condition =
               standardized.subtype || standardized.disease_type || "";
             standardized.points = [];
-
             return standardized;
           });
 
           setGbmSamples(standardizedSamples);
 
-          // Update the selected dataset with the standardized samples
+          // Only update selectedDataset if samples are not already set
           setSelectedDataset((prevDataset) => {
             if (!prevDataset) return null;
+            if (
+              prevDataset.samples &&
+              Array.isArray(prevDataset.samples) &&
+              prevDataset.samples.length > 0
+            ) {
+              return prevDataset; // Prevent update loop
+            }
             return {
               ...prevDataset,
               samples: standardizedSamples,
@@ -392,7 +378,49 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
       fetchGBMSamples();
     }
-  }, [selectedDataset, gbmSamples.length]);
+  }, [selectedDataset, gbmSamples.length, isLoadingGBM]);
+
+  // General dataset fetch guard
+  useEffect(() => {
+    if (!selectedDataset) return;
+    // Only fetch if samples are not already loaded and not currently loading
+    if (
+      !selectedDataset.samples ||
+      !Array.isArray(selectedDataset.samples) ||
+      selectedDataset.samples.length === 0
+    ) {
+      const fetchSamplesForDataset = async () => {
+        try {
+          setIsLoadingSamples(true);
+          setError(null);
+          const fetcher = CancerDataFetcherFactory.getFetcher(
+            selectedDataset.id
+          );
+          const samples = await fetcher.fetchAllSamples();
+          setSelectedDataset((prevDataset) => {
+            if (!prevDataset) return null;
+            if (
+              prevDataset.samples &&
+              Array.isArray(prevDataset.samples) &&
+              prevDataset.samples.length > 0
+            ) {
+              return prevDataset; // Prevent update loop
+            }
+            return {
+              ...prevDataset,
+              samples: samples,
+            };
+          });
+        } catch (err) {
+          console.error(`Error loading ${selectedDataset.id} samples:`, err);
+          setError(`Failed to load ${selectedDataset.id} samples data`);
+        } finally {
+          setIsLoadingSamples(false);
+        }
+      };
+      fetchSamplesForDataset();
+    }
+  }, [selectedDataset]);
 
   // Add/update a column filter
   const addColumnFilter = (filter: ColumnFilterItem) => {
@@ -491,7 +519,7 @@ const generateId = () => `gbm-${Math.random().toString(36).substring(2, 10)}`;
 
 export const useSamplesContext = () => {
   const context = useContext(SamplesContext);
-  console.log(context);
+  // console.log(context);
   if (context === undefined) {
     throw new Error("useSamplesContext must be used within a SamplesProvider");
   }

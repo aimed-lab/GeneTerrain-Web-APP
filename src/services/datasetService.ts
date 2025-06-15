@@ -3,6 +3,20 @@
 // Import the types instead of redeclaring them
 import { Dataset, Point } from "../types";
 
+// API endpoint constant
+const DATASET_API_ENDPOINT =
+  "https://aimed.uab.edu/apex/gtkb/datasets/pancan/all";
+
+// Interface for API response
+interface DatasetAPIResponse {
+  items: Array<{
+    cancer_type: string;
+    description: string;
+  }>;
+  hasMore: boolean;
+  count: number;
+}
+
 // Gene names for mock data
 const geneNames = [
   "BRCA1",
@@ -137,17 +151,51 @@ export function generateMockDatasets(sampleCount: number = 20): Dataset[] {
   }));
 }
 
-// Function to fetch datasets (mock implementation for now)
+// Function to fetch datasets from API
+async function fetchDatasetsFromAPI(): Promise<Dataset[]> {
+  try {
+    const response = await fetch(DATASET_API_ENDPOINT);
+
+    if (!response.ok) {
+      throw new Error(`API returned status ${response.status}`);
+    }
+
+    const data: DatasetAPIResponse = await response.json();
+
+    // Transform API response to match our Dataset type
+    return data.items.map((item) => ({
+      id: item.cancer_type,
+      name: item.cancer_type,
+      description: item.description,
+      samples: [], // Samples will be fetched separately when needed
+    }));
+  } catch (error) {
+    console.error("Error fetching datasets from API:", error);
+    throw error;
+  }
+}
+
+// Function to fetch datasets (now tries API first, falls back to mock data)
 export async function fetchDatasets(): Promise<Dataset[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  return generateMockDatasets();
+  try {
+    // Try to fetch from API first
+    return await fetchDatasetsFromAPI();
+  } catch (error) {
+    console.warn("Falling back to mock datasets due to API error:", error);
+    // Fall back to mock data if API fails
+    return generateMockDatasets();
+  }
 }
 
 // Function to fetch a single dataset by ID
 export async function fetchDatasetById(id: string): Promise<Dataset | null> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 600));
-  const datasets = generateMockDatasets();
-  return datasets.find((dataset) => dataset.id === id) || null;
+  try {
+    const datasets = await fetchDatasetsFromAPI();
+    return datasets.find((dataset) => dataset.id === id) || null;
+  } catch (error) {
+    console.warn("Falling back to mock dataset due to API error:", error);
+    // Fall back to mock data if API fails
+    const mockDatasets = generateMockDatasets();
+    return mockDatasets.find((dataset) => dataset.id === id) || null;
+  }
 }

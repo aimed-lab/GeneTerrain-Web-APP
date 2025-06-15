@@ -51,15 +51,47 @@ function generateRandomPoints(count: number) {
   return normalizePoints(points);
 }
 
+// Mapping of sample prefixes to legacy API URLs
+const legacyApiMapping: Record<string, string> = {
+  TCGA: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_GBM/TCGA/",
+  GSM: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/CGGA_Illumina_HiSeq_2000/",
+  CGGA: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/CGGA_Illumina_HiSeq_2000_or_2500/",
+  IVYGAP: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/IvyGap/",
+  GLSS: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/GLSS/",
+};
+
+// Pancan gene expression and layout URL templates
+const pancanGeneExpUrl = (cancerId: string, sampleId: string) =>
+  `https://aimed.uab.edu/apex/gtkb/gene_exp/pancan/${cancerId}/${sampleId}`;
+const pancanLayoutUrl = (cancerId: string) =>
+  `https://aimed.uab.edu/apex/gtkb/layout/pancan/${cancerId}`;
+
 // Helper: Fetch layout data (all at once)
-async function fetchLayoutData(): Promise<LayoutItem[]> {
+async function fetchLayoutData(
+  selectedDataset: Dataset | null
+): Promise<LayoutItem[]> {
   let layoutData: LayoutItem[] = [];
   let offset = 0,
     hasMore = true;
+
+  // Determine if this is a pancan dataset
+  let pancanId = selectedDataset?.id?.toLowerCase() || "";
+  let isPancan =
+    selectedDataset &&
+    pancanId &&
+    !legacyApiMapping[pancanId.toUpperCase()] &&
+    pancanId !== "gbm"; // Exclude legacy/GBM
+
+  let baseUrl =
+    isPancan && pancanId
+      ? pancanLayoutUrl(pancanId)
+      : "https://aimed.uab.edu/apex/gtkb/layout/all";
+
   while (hasMore) {
-    const res = await fetch(
-      `https://aimed.uab.edu/apex/gtkb/layout/all?offset=${offset}`
-    );
+    const url = isPancan
+      ? `${baseUrl}?offset=${offset}`
+      : `${baseUrl}?offset=${offset}`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch layout data");
     const json = await res.json();
     layoutData = layoutData.concat(json.items);
@@ -69,19 +101,23 @@ async function fetchLayoutData(): Promise<LayoutItem[]> {
   return layoutData;
 }
 
-// Mapping of sample prefixes to API URLs
-const apiMapping: Record<string, string> = {
-  TCGA: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_GBM/TCGA/",
-  GSM: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/CGGA_Illumina_HiSeq_2000/",
-  CGGA: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/CGGA_Illumina_HiSeq_2000_or_2500/",
-  IVYGAP: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/IvyGap/",
-  GLSS: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/GLSS/",
-};
-
 // Helper: Fetch gene expression for a single sample
-async function fetchSampleGeneData(sampleId: string): Promise<GeneExpItem[]> {
+async function fetchSampleGeneData(
+  sampleId: string,
+  selectedDataset: Dataset | null
+): Promise<GeneExpItem[]> {
+  // Try legacy mapping first
   const prefix = sampleId.split("-")[0];
-  const apiUrl = apiMapping[prefix];
+  let apiUrl = legacyApiMapping[prefix];
+
+  // If not found, try pancan pattern
+  if (!apiUrl && selectedDataset) {
+    const pancanId = selectedDataset.id.toLowerCase();
+    if (pancanId && pancanId !== "gbm") {
+      apiUrl = `https://aimed.uab.edu/apex/gtkb/gene_exp/pancan/${pancanId}/`;
+    }
+  }
+
   if (!apiUrl) throw new Error(`No API mapping for ${sampleId}`);
   const res = await fetch(`${apiUrl}${sampleId}`);
   if (!res.ok) throw new Error(`Failed to fetch gene data for ${sampleId}`);
@@ -98,10 +134,10 @@ export async function fetchGeneExpressionData(
     console.log("Fetching gene expression data for samples:", sampleIds);
     // Fetch layout and gene expression data in parallel
     const [layoutData, geneDataArr] = await Promise.all([
-      fetchLayoutData(),
+      fetchLayoutData(selectedDataset),
       Promise.all(
         sampleIds.map((id) =>
-          fetchSampleGeneData(id).catch((err) => {
+          fetchSampleGeneData(id, selectedDataset).catch((err) => {
             console.warn(`Failed to fetch gene data for ${id}:`, err);
             return [];
           })
