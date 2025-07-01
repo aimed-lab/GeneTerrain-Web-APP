@@ -45,6 +45,7 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
     setSearchTerm,
     setFilterCondition,
     setIsMapVisible,
+    samples,
   } = useSamplesContext();
 
   // Update local datasets when prop datasets change
@@ -226,7 +227,7 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
                     borderRadius="md"
                     fontSize="x-small"
                   >
-                    {selectedDataset.samples.length} Samples
+                    {samples.length} Samples
                   </Badge>
                 </Flex>
                 <Text
@@ -244,49 +245,42 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
                   borderWidth="1px"
                   borderColor="geneTerrain.border"
                 >
-                  {selectedDataset.samples &&
-                    selectedDataset.samples.length > 0 && (
-                      <HStack spacing={4} fontSize="sm">
-                        <Tooltip
-                          label="Sample conditions in this dataset"
-                          placement="top"
-                          hasArrow
-                        >
-                          <Flex align="center">
-                            <Icon
-                              as={FaInfoCircle}
-                              mr={2}
-                              color="geneTerrain.primary"
-                            />
-                            <Text
-                              color="geneTerrain.textSecondary"
-                              fontWeight="medium"
-                            >
-                              {
-                                new Set(
-                                  selectedDataset.samples.map(
-                                    (s) => s.condition
-                                  )
-                                ).size
-                              }{" "}
-                              Conditions
-                            </Text>
-                          </Flex>
-                        </Tooltip>
-                        <Tooltip label="Data source" placement="top" hasArrow>
-                          <Flex align="center">
-                            <Icon
-                              as={FaDatabase}
-                              mr={2}
-                              color="geneTerrain.accent2"
-                            />
-                            <Text color="geneTerrain.textSecondary">
-                              Brain tumor gene expression data
-                            </Text>
-                          </Flex>
-                        </Tooltip>
-                      </HStack>
-                    )}
+                  {samples && samples.length > 0 && (
+                    <HStack spacing={4} fontSize="sm">
+                      <Tooltip
+                        label="Sample conditions in this dataset"
+                        placement="top"
+                        hasArrow
+                      >
+                        <Flex align="center">
+                          <Icon
+                            as={FaInfoCircle}
+                            mr={2}
+                            color="geneTerrain.primary"
+                          />
+                          <Text
+                            color="geneTerrain.textSecondary"
+                            fontWeight="medium"
+                          >
+                            {new Set(samples.map((s) => s.condition)).size}{" "}
+                            Conditions
+                          </Text>
+                        </Flex>
+                      </Tooltip>
+                      <Tooltip label="Data source" placement="top" hasArrow>
+                        <Flex align="center">
+                          <Icon
+                            as={FaDatabase}
+                            mr={2}
+                            color="geneTerrain.accent2"
+                          />
+                          <Text color="geneTerrain.textSecondary">
+                            Brain tumor gene expression data
+                          </Text>
+                        </Flex>
+                      </Tooltip>
+                    </HStack>
+                  )}
                 </Box>
               </Box>
             )}

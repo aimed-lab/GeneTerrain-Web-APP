@@ -32,6 +32,7 @@ import {
   generateRandomPoints,
   generateMockDatasets,
 } from "../../services/datasetService";
+import { useSamplesContext } from "../../context/SamplesContext";
 
 // Define necessary interfaces
 interface Point {
@@ -76,7 +77,7 @@ const fetchDatasets = async (): Promise<Dataset[]> => {
 // Main HomeContent component
 const HomeContent: React.FC = () => {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
+  const { selectedDataset, setSelectedDataset, samples } = useSamplesContext();
   const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -205,7 +206,7 @@ const HomeContent: React.FC = () => {
                 </Heading>
                 <HStack>
                   <Badge colorScheme="green" fontSize="md" px={2} py={1}>
-                    {selectedDataset.samples.length} samples
+                    {samples.length} samples
                   </Badge>
                   {selectedSample && (
                     <Button
@@ -241,7 +242,7 @@ const HomeContent: React.FC = () => {
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {selectedDataset.samples.slice(0, 10).map((sample) => (
+                      {samples.slice(0, 10).map((sample) => (
                         <Tr
                           key={sample.id}
                           cursor="pointer"
@@ -275,10 +276,10 @@ const HomeContent: React.FC = () => {
                     </Tbody>
                   </Table>
                 </Box>
-                {selectedDataset.samples.length > 10 && (
+                {samples.length > 10 && (
                   <Box p={4} textAlign="center" borderTopWidth="1px">
                     <Text color="gray.500">
-                      Showing 10 of {selectedDataset.samples.length} samples
+                      Showing 10 of {samples.length} samples
                     </Text>
                   </Box>
                 )}

@@ -48,11 +48,7 @@ export class GBMDataFetcher extends BaseDataFetcher {
     samples.forEach((sample) => {
       // Use reliable ID fields to identify samples
       const id =
-        sample.sample_id ||
-        sample.patient_id ||
-        sample.case_id ||
-        sample.id ||
-        sample.sampleid;
+        sample.sample_id || sample.patient_id || sample.case_id || sample.id;
 
       // Skip samples without any ID (very rare case)
       if (!id) {

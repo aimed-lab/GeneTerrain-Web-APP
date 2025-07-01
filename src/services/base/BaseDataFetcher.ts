@@ -25,18 +25,16 @@ export abstract class BaseDataFetcher {
 
         const data: SampleAPIResponse = await response.json();
 
-        if (
-          !data.items ||
-          !Array.isArray(data.items) ||
-          data.items.length === 0
-        ) {
-          console.log(`No more samples found in ${apiUrl}`);
+        if (data.count === 0) {
+          console.log(`No samples found in ${apiUrl}`);
           break;
         }
 
-        allItems = [...allItems, ...data.items];
+        if (data.items && Array.isArray(data.items)) {
+          allItems = [...allItems, ...data.items];
+        }
 
-        if (!data.hasMore || data.items.length < this.batchSize) {
+        if (!data.hasMore) {
           hasMore = false;
         } else {
           offset += this.batchSize;

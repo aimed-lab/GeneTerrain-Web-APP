@@ -38,6 +38,7 @@ const SamplesSection: React.FC<SamplesSectionProps> = ({
     searchTerm,
     columnFilters,
     filteredSamples,
+    samples,
   } = useSamplesContext();
   const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
   const [hasVisualized, setHasVisualized] = useState(false);
@@ -260,15 +261,14 @@ const SamplesSection: React.FC<SamplesSectionProps> = ({
                       {selectedDataset.name || selectedDataset.id}
                     </Text>
                   </Flex>
-                  {filteredSamples && selectedDataset?.samples && (
+                  {filteredSamples && samples && (
                     <Badge
                       bg="geneTerrain.primary"
                       color="white"
                       fontSize="xs"
                       borderRadius="md"
                     >
-                      {filteredSamples.length}/{selectedDataset.samples.length}{" "}
-                      samples
+                      {filteredSamples.length}/{samples.length} samples
                     </Badge>
                   )}
                 </Flex>

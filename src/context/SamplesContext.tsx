@@ -61,6 +61,8 @@ interface SamplesContextType {
   clearColumnFilters: () => void;
   activeSelectionSource: "scatter" | "table" | null;
   setActiveSelectionSource: (source: "scatter" | "table" | null) => void;
+  embeddingDataMap: EmbeddingDataMap;
+  samples: Sample[];
 }
 
 const SamplesContext = createContext<SamplesContextType | undefined>(undefined);
@@ -69,6 +71,9 @@ interface SamplesProviderProps {
   children: React.ReactNode;
   datasets: Dataset[];
 }
+
+// Add Embeddings type
+export type EmbeddingDataMap = Map<string, { x: number; y: number }>;
 
 export const SamplesProvider: React.FC<SamplesProviderProps> = ({
   children,
@@ -104,6 +109,13 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
   const [activeSelectionSource, setActiveSelectionSource] = useState<
     "scatter" | "table" | null
   >(null);
+
+  const [embeddingDataMap, setEmbeddingDataMap] = useState<EmbeddingDataMap>(
+    new Map()
+  );
+
+  // Add samples state
+  const [samples, setSamples] = useState<Sample[]>([]);
 
   // Reset selected samples when dataset changes
   useEffect(() => {
@@ -147,9 +159,8 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
   // Get filtered samples based on search term and condition filter
   const filteredSamples = useMemo(() => {
-    if (!selectedDataset) return [];
-
-    return selectedDataset.samples.filter((sample) => {
+    if (!samples) return [];
+    return samples.filter((sample) => {
       // Existing search and condition filters
       const matchesSearch =
         !searchTerm ||
@@ -158,23 +169,17 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
           sample.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (sample.description &&
           sample.description.toLowerCase().includes(searchTerm.toLowerCase()));
-
       const matchesCondition =
         !filterCondition || sample.condition === filterCondition;
-
       // Column filters - check all active filters
       let matchesColumnFilters = true;
-
       if (columnFilters.size > 0) {
-        // For each active column filter
         for (const [column, filter] of Array.from(columnFilters.entries())) {
           const sampleValue = (sample as any)[column];
-
           if (sampleValue === null || sampleValue === undefined) {
             matchesColumnFilters = false;
             break;
           }
-
           switch (filter.type) {
             case "numeric":
               const [min, max] = filter.value as [number, number];
@@ -183,13 +188,11 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
                 matchesColumnFilters = false;
               }
               break;
-
             case "categorical":
               if (String(sampleValue) !== String(filter.value)) {
                 matchesColumnFilters = false;
               }
               break;
-
             case "text":
               if (
                 !String(sampleValue)
@@ -200,21 +203,18 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
               }
               break;
           }
-
-          // If any filter doesn't match, we can break early
           if (!matchesColumnFilters) break;
         }
       }
-
       return matchesSearch && matchesCondition && matchesColumnFilters;
     });
-  }, [selectedDataset, searchTerm, filterCondition, columnFilters]);
+  }, [samples, searchTerm, filterCondition, columnFilters]);
 
   // Get selected samples
   const selectedSamples = useMemo(() => {
-    if (!selectedDataset) return [];
-    return selectedDataset.samples.filter((s) => selectedSampleIds.has(s.id));
-  }, [selectedDataset, selectedSampleIds]);
+    if (!samples) return [];
+    return samples.filter((s) => selectedSampleIds.has(s.id));
+  }, [samples, selectedSampleIds]);
 
   // Handle sample selection
   const handleSampleSelect = (sample: Sample, multiSelect: boolean) => {
@@ -278,20 +278,15 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
   // Handle selecting samples by condition
   const handleSelectByCondition = (condition: string) => {
-    if (!selectedDataset) return;
-
     setSelectedSampleIds((prev) => {
       const newSelection = new Set(prev);
-
-      selectedDataset.samples
+      samples
         .filter((sample) => sample.condition === condition)
         .forEach((sample) => {
           newSelection.add(sample.id);
         });
-
       return newSelection;
     });
-
     toast({
       title: "Selection updated",
       description: `Selected all "${condition}" samples`,
@@ -312,8 +307,7 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
     const isGBMDataset = selectedDataset.name === "Glioblastoma Multiforme";
 
-    // Only fetch if GBM samples are not already loaded and not currently loading
-    if (isGBMDataset && gbmSamples.length === 0 && !isLoadingGBM) {
+    if (isGBMDataset && gbmSamples.length === 0) {
       setIsLoadingGBM(true);
 
       const fetchGBMSamples = async () => {
@@ -321,25 +315,48 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
           const dataFetcher = new GBMDataFetcher();
           const rawGbmSamples = await dataFetcher.fetchAllSamples();
 
+          // Get all possible fields from all samples
+          const allFields = new Set<string>();
+          rawGbmSamples.forEach((sample) => {
+            Object.keys(sample).forEach((key) => allFields.add(key));
+          });
+
           // Standardize field names across samples
           const standardizedSamples = rawGbmSamples.map((sample) => {
+            // Create a consistent sample object with standardized field names
             const standardized: any = {};
+
+            // Map common alternative field names to standard ones
             const fieldMappings: Record<string, string> = {
+              // ID fields
               case_id: "patient_id",
               case_submitter_id: "patient_id",
               patient_barcode: "patient_id",
+
+              // Clinical fields
               gender: "gender",
               sex: "gender",
+
+              // Subtype/classification fields
               molecular_subtype: "subtype",
               glioma_subtype: "subtype",
+
+              // Status fields
               idh_mutation_status: "idh_status",
               mgmt_promoter_status: "mgmt_status",
             };
+
+            // Process all fields in the sample
             Object.entries(sample).forEach(([key, value]) => {
+              // Skip empty values
               if (value === null || value === undefined || value === "") return;
+
+              // Use mapped field name if available
               const standardKey = fieldMappings[key.toLowerCase()] || key;
               standardized[standardKey] = value;
             });
+
+            // Ensure required fields exist
             standardized.id =
               standardized.sampleid ||
               standardized.sample_id ||
@@ -348,21 +365,15 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
             standardized.condition =
               standardized.subtype || standardized.disease_type || "";
             standardized.points = [];
+
             return standardized;
           });
 
           setGbmSamples(standardizedSamples);
 
-          // Only update selectedDataset if samples are not already set
+          // Update the selected dataset with the standardized samples
           setSelectedDataset((prevDataset) => {
             if (!prevDataset) return null;
-            if (
-              prevDataset.samples &&
-              Array.isArray(prevDataset.samples) &&
-              prevDataset.samples.length > 0
-            ) {
-              return prevDataset; // Prevent update loop
-            }
             return {
               ...prevDataset,
               samples: standardizedSamples,
@@ -378,49 +389,7 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
       fetchGBMSamples();
     }
-  }, [selectedDataset, gbmSamples.length, isLoadingGBM]);
-
-  // General dataset fetch guard
-  useEffect(() => {
-    if (!selectedDataset) return;
-    // Only fetch if samples are not already loaded and not currently loading
-    if (
-      !selectedDataset.samples ||
-      !Array.isArray(selectedDataset.samples) ||
-      selectedDataset.samples.length === 0
-    ) {
-      const fetchSamplesForDataset = async () => {
-        try {
-          setIsLoadingSamples(true);
-          setError(null);
-          const fetcher = CancerDataFetcherFactory.getFetcher(
-            selectedDataset.id
-          );
-          const samples = await fetcher.fetchAllSamples();
-          setSelectedDataset((prevDataset) => {
-            if (!prevDataset) return null;
-            if (
-              prevDataset.samples &&
-              Array.isArray(prevDataset.samples) &&
-              prevDataset.samples.length > 0
-            ) {
-              return prevDataset; // Prevent update loop
-            }
-            return {
-              ...prevDataset,
-              samples: samples,
-            };
-          });
-        } catch (err) {
-          console.error(`Error loading ${selectedDataset.id} samples:`, err);
-          setError(`Failed to load ${selectedDataset.id} samples data`);
-        } finally {
-          setIsLoadingSamples(false);
-        }
-      };
-      fetchSamplesForDataset();
-    }
-  }, [selectedDataset]);
+  }, [selectedDataset, gbmSamples.length]);
 
   // Add/update a column filter
   const addColumnFilter = (filter: ColumnFilterItem) => {
@@ -444,6 +413,44 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
   const clearColumnFilters = () => {
     setColumnFilters(new Map());
   };
+
+  // Fetch embeddings for selected dataset
+  const fetchEmbeddings = async (datasetId: string) => {
+    if (!datasetId) {
+      setEmbeddingDataMap(new Map());
+      return;
+    }
+    let allEmbeddingItems: any[] = [];
+    let offset = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const apiUrl = `https://aimed.uab.edu/apex/gtkb/embeddings/${datasetId.toLocaleLowerCase()}?offset=${offset}`;
+      const response = await fetch(apiUrl);
+      if (!response.ok) break;
+      const apiResponse = await response.json();
+      if (!apiResponse.items) break;
+      allEmbeddingItems = allEmbeddingItems.concat(apiResponse.items);
+      hasMore = apiResponse.hasMore;
+      offset += apiResponse.limit || 10000;
+    }
+    setEmbeddingDataMap(
+      new Map(
+        allEmbeddingItems.map((item: any) => [
+          item.sampleid,
+          { x: item.x, y: item.y },
+        ])
+      )
+    );
+  };
+
+  // Fetch embeddings when selectedDataset changes
+  useEffect(() => {
+    if (selectedDataset && selectedDataset.id) {
+      fetchEmbeddings(selectedDataset.id);
+    } else {
+      setEmbeddingDataMap(new Map());
+    }
+  }, [selectedDataset]);
 
   const value = {
     datasets,
@@ -481,7 +488,32 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
     clearColumnFilters,
     activeSelectionSource,
     setActiveSelectionSource,
+    embeddingDataMap,
+    samples,
   };
+
+  useEffect(() => {
+    if (!selectedDataset) return;
+
+    const fetchSamplesForDataset = async () => {
+      try {
+        setIsLoadingSamples(true);
+        setError(null);
+
+        const fetcher = CancerDataFetcherFactory.getFetcher(selectedDataset.id);
+        const samples = await fetcher.fetchAllSamples();
+
+        setSamples(samples);
+      } catch (err) {
+        console.error(`Error loading ${selectedDataset.id} samples:`, err);
+        setError(`Failed to load ${selectedDataset.id} samples data`);
+      } finally {
+        setIsLoadingSamples(false);
+      }
+    };
+
+    fetchSamplesForDataset();
+  }, [selectedDataset]);
 
   return (
     <SamplesContext.Provider value={value}>{children}</SamplesContext.Provider>
@@ -519,7 +551,6 @@ const generateId = () => `gbm-${Math.random().toString(36).substring(2, 10)}`;
 
 export const useSamplesContext = () => {
   const context = useContext(SamplesContext);
-  // console.log(context);
   if (context === undefined) {
     throw new Error("useSamplesContext must be used within a SamplesProvider");
   }
