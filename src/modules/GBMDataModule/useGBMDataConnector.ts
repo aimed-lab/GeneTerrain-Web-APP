@@ -64,11 +64,16 @@ export const useGBMDataConnector = (datasetName: string) => {
 function formatSampleForSelection(gbmSample: GBMSampleData): any {
   return {
     // Adjust these fields based on what your sample selection component expects
-    id: gbmSample.sample_id || gbmSample.patient_id || "unknown",
+    id:
+      gbmSample.sample_id ||
+      gbmSample.patient_id ||
+      gbmSample.sampleid ||
+      "unknown",
     name:
       gbmSample.name ||
       gbmSample.sample_id ||
       gbmSample.patient_id ||
+      gbmSample.sampleid ||
       "Unknown Sample",
     description: createSampleDescription(gbmSample),
     // Add any other required fields for your sample selection component

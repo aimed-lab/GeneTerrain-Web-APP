@@ -202,6 +202,70 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
   // Ref for the actual Plotly DOM node
   const plotlyNodeRef = useRef<any>(null);
 
+  // Memoize base layout (without neighborhood shape)
+  const [fixedAxisRange, setFixedAxisRange] = useState<{
+    x: [number, number];
+    y: [number, number];
+  } | null>(null);
+
+  const baseLayout = useMemo(
+    () => ({
+      showlegend: true,
+      legend: {
+        orientation: "v",
+        x: 1.02,
+        y: 0.9,
+        xanchor: "left",
+        yanchor: "top",
+        font: { size: 10 },
+        itemclick: "toggle",
+        itemdoubleclick: "toggleothers",
+      },
+      margin: { t: 40, r: 180, b: 50, l: 40 },
+      hovermode: "closest",
+      autosize: true,
+      xaxis: {
+        showline: true,
+        linecolor: "rgba(0,0,0,0.05)",
+        linewidth: 1,
+        zeroline: true,
+        zerolinecolor: "rgba(0,0,0,0.2)",
+        zerolinewidth: 1,
+        // Lock axis range if fixedAxisRange is set
+        ...(fixedAxisRange ? { range: fixedAxisRange.x } : {}),
+      },
+      yaxis: {
+        showline: true,
+        linecolor: "rgba(0,0,0,0.05)",
+        linewidth: 1,
+        zeroline: true,
+        zerolinecolor: "rgba(0,0,0,0.2)",
+        zerolinewidth: 1,
+        // Make y axis scale match x axis for true circle
+        scaleanchor: "x",
+        scaleratio: 1,
+        // Lock axis range if fixedAxisRange is set
+        ...(fixedAxisRange ? { range: fixedAxisRange.y } : {}),
+      },
+    }),
+    [fixedAxisRange]
+  );
+
+  // Capture initial axis ranges after first plot render and lock them
+  useEffect(() => {
+    if (plotlyNodeRef.current && !fixedAxisRange) {
+      // Get current axis ranges from the plot
+      const xRange = plotlyNodeRef.current.layout?.xaxis?.range;
+      const yRange = plotlyNodeRef.current.layout?.yaxis?.range;
+      if (xRange && yRange) {
+        setFixedAxisRange({
+          x: [xRange[0], xRange[1]],
+          y: [yRange[0], yRange[1]],
+        });
+      }
+    }
+  }, [plotlyNodeRef.current]);
+
   // Memoize plotData so it only updates when actual data changes
   const memoizedPlotData = useMemo(() => {
     const plotData = (filteredSamples || [])
@@ -233,43 +297,6 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     }
     return plotData;
   }, [embeddingDataMap, filteredSamples]);
-
-  // Memoize base layout (without neighborhood shape)
-  const baseLayout = useMemo(
-    () => ({
-      showlegend: true,
-      legend: {
-        orientation: "v",
-        x: 1.02,
-        y: 0.9,
-        xanchor: "left",
-        yanchor: "top",
-        font: { size: 10 },
-        itemclick: "toggle",
-        itemdoubleclick: "toggleothers",
-      },
-      margin: { t: 40, r: 180, b: 50, l: 40 },
-      hovermode: "closest",
-      autosize: true,
-      xaxis: {
-        showline: true,
-        linecolor: "rgba(0,0,0,0.05)",
-        linewidth: 1,
-        zeroline: true,
-        zerolinecolor: "rgba(0,0,0,0.2)",
-        zerolinewidth: 1,
-      },
-      yaxis: {
-        showline: true,
-        linecolor: "rgba(0,0,0,0.05)",
-        linewidth: 1,
-        zeroline: true,
-        zerolinecolor: "rgba(0,0,0,0.2)",
-        zerolinewidth: 1,
-      },
-    }),
-    []
-  );
 
   // Effect: update only the circle shape on radius/center change
   useEffect(() => {

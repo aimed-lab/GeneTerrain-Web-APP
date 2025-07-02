@@ -21,8 +21,16 @@ export async function fetchAndFormatGBMSamples(): Promise<any[]> {
  */
 function formatGBMSampleForApp(gbmSample: GBMSampleData): any {
   return {
-    id: gbmSample.sample_id || gbmSample.patient_id || String(Math.random()),
-    name: gbmSample.sample_id || gbmSample.patient_id || "Unknown Sample",
+    id:
+      gbmSample.sample_id ||
+      gbmSample.patient_id ||
+      gbmSample.sampleid ||
+      String(Math.random()),
+    name:
+      gbmSample.sample_id ||
+      gbmSample.patient_id ||
+      gbmSample.sampleid ||
+      "Unknown Sample",
     description: createSampleDescription(gbmSample),
     // Add any other fields your Sample type requires
     metadata: gbmSample, // Keep the original data for reference
