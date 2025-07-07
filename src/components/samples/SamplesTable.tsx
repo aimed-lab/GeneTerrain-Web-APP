@@ -135,6 +135,7 @@ const getFieldCategory = (field: string): FieldCategory | undefined => {
 };
 
 // Helper for safe property access
+// Always use this to get the unique sample ID for selection/matching, regardless of API field name
 const getSampleId = (sample: any): string => {
   if (!sample || typeof sample !== "object") return "";
   return sample.sampleid || sample.sample_id || String(sample.id) || "";

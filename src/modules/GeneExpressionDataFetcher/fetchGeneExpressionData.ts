@@ -51,15 +51,27 @@ function generateRandomPoints(count: number) {
   return normalizePoints(points);
 }
 
-// Helper: Fetch layout data (all at once)
-async function fetchLayoutData(): Promise<LayoutItem[]> {
+// Helper: Fetch layout data (all at once), now supports PanCan template
+async function fetchLayoutData(
+  selectedDataset: Dataset | null
+): Promise<LayoutItem[]> {
   let layoutData: LayoutItem[] = [];
   let offset = 0,
     hasMore = true;
+  const isGBM =
+    selectedDataset &&
+    (selectedDataset.id?.toLowerCase().includes("gbm") ||
+      selectedDataset.name?.toLowerCase().includes("gbm"));
+  const cancerType = selectedDataset ? selectedDataset.id : "";
   while (hasMore) {
-    const res = await fetch(
-      `https://aimed.uab.edu/apex/gtkb/layout/all?offset=${offset}`
-    );
+    let url = "";
+    if (!isGBM) {
+      url = `https://aimed.uab.edu/apex/gtkb/layout/pancan/${cancerType.toLowerCase()}?offset=${offset}`;
+    } else {
+      url = `https://aimed.uab.edu/apex/gtkb/layout/all?offset=${offset}`;
+    }
+    console.log("[GeneTerrain] Layout URL:", url);
+    const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch layout data");
     const json = await res.json();
     layoutData = layoutData.concat(json.items);
@@ -78,14 +90,36 @@ const apiMapping: Record<string, string> = {
   GLSS: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/GLSS/",
 };
 
-// Helper: Fetch gene expression for a single sample
-async function fetchSampleGeneData(sampleId: string): Promise<GeneExpItem[]> {
-  const prefix = sampleId.split("-")[0];
-  const apiUrl = apiMapping[prefix];
-  if (!apiUrl) throw new Error(`No API mapping for ${sampleId}`);
-  const res = await fetch(`${apiUrl}${sampleId}`);
-  if (!res.ok) throw new Error(`Failed to fetch gene data for ${sampleId}`);
-  return (await res.json()).items;
+// Helper: Fetch gene expression for a single sample, now supports PanCan template
+async function fetchSampleGeneData(
+  sampleId: string,
+  selectedDataset: Dataset | null
+): Promise<GeneExpItem[]> {
+  // Determine if PanCan dataset
+  // alert(selectedDataset);
+  console.log("selecteddataset", selectedDataset);
+  const isGBM =
+    selectedDataset &&
+    (selectedDataset.id?.toLowerCase().includes("gbm") ||
+      selectedDataset.name?.toLowerCase().includes("gbm"));
+
+  const cancerType = selectedDataset ? selectedDataset.id : "";
+  if (!isGBM) {
+    const url = `https://aimed.uab.edu/apex/gtkb/gene_exp/pancan/${cancerType.toLowerCase()}/${sampleId}`;
+    console.log("[GeneTerrain] Gene Expression URL:", url);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch gene data for ${sampleId}`);
+    return (await res.json()).items;
+  } else {
+    const prefix = sampleId.split("-")[0];
+    const apiUrl = apiMapping[prefix];
+    if (!apiUrl) throw new Error(`No API mapping for ${sampleId}`);
+    const url = `${apiUrl}${sampleId}`;
+    console.log("[GeneTerrain] Gene Expression URL:", url);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch gene data for ${sampleId}`);
+    return (await res.json()).items;
+  }
 }
 
 // --- Main function ---
@@ -98,10 +132,10 @@ export async function fetchGeneExpressionData(
     console.log("Fetching gene expression data for samples:", sampleIds);
     // Fetch layout and gene expression data in parallel
     const [layoutData, geneDataArr] = await Promise.all([
-      fetchLayoutData(),
+      fetchLayoutData(selectedDataset),
       Promise.all(
         sampleIds.map((id) =>
-          fetchSampleGeneData(id).catch((err) => {
+          fetchSampleGeneData(id, selectedDataset).catch((err) => {
             console.warn(`Failed to fetch gene data for ${id}:`, err);
             return [];
           })

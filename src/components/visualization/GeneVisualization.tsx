@@ -7,18 +7,23 @@ import {
   HStack,
   Badge,
   Icon,
-  Alert,
-  AlertIcon,
-  AlertDescription,
 } from "@chakra-ui/react";
 import { FaChartArea } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useSamplesContext } from "../../context/SamplesContext";
 import GaussianMap from "../../GaussianPlots/GaussianMap";
 import { fetchGeneExpressionData } from "../../modules/GeneExpressionDataFetcher/fetchGeneExpressionData";
+import { SampleSummaryComponent } from "../../modules/SampleSummaryModule";
 import theme from "../../theme";
 
 const MotionBox = motion(Box);
+
+// Helper for safe property access
+// Always use this to get the unique sample ID for selection/matching, regardless of API field name
+const getSampleId = (sample: any): string => {
+  if (!sample || typeof sample !== "object") return "";
+  return sample.sampleid || sample.sample_id || String(sample.id) || "";
+};
 
 const GeneVisualization: React.FC = () => {
   const {
@@ -31,6 +36,14 @@ const GeneVisualization: React.FC = () => {
   const [points, setPoints] = useState<any[]>([]);
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const [visualizedSample, setVisualizedSample] = useState<any | null>(null);
+  const [visualizeTrigger, setVisualizeTrigger] = useState(0);
+
+  // Increment trigger when isMapVisible becomes true
+  useEffect(() => {
+    if (isMapVisible) {
+      setVisualizeTrigger((v) => v + 1);
+    }
+  }, [isMapVisible]);
 
   // Fetch points from the API or fallback to random points
   useEffect(() => {
@@ -59,7 +72,7 @@ const GeneVisualization: React.FC = () => {
       }
 
       // Fetch gene expression points for the selected samples
-      const sampleIds = selectedSamples.map((s) => s.sampleid || s.id);
+      const sampleIds = selectedSamples.map(getSampleId);
       const fetchedPoints = await fetchGeneExpressionData(
         sampleIds,
         selectedDataset,
@@ -117,17 +130,10 @@ const GeneVisualization: React.FC = () => {
       <Box p={4}>
         <Flex justify="space-between" mb={4} wrap="wrap">
           <Box mb={2}>
-            <Text
-              fontWeight="semibold"
-              mb={1}
-              color="geneTerrain.textPrimary" // ADDED
-            >
+            <Text fontWeight="semibold" mb={1} color="geneTerrain.textPrimary">
               Dataset: {selectedDataset?.name}
             </Text>
-            <Text
-              fontSize="sm"
-              color="geneTerrain.textSecondary" // CHANGED from gray.300
-            >
+            <Text fontSize="sm" color="geneTerrain.textSecondary">
               Displaying gene expression for {selectedSamples.length}{" "}
               {selectedSamples.length === 1 ? "sample" : "samples"}
             </Text>
@@ -148,26 +154,15 @@ const GeneVisualization: React.FC = () => {
           </HStack>
         </Flex>
 
-        {selectedSamples.length > 1 && (
-          <Alert
-            mb={4}
-            borderRadius="md"
-            bg={`${theme.colors?.geneTerrain?.accent1}10`} // 10% opacity of accent1 (lime green)
-            color="geneTerrain.textPrimary"
-            borderLeftWidth="4px"
-            borderLeftColor="geneTerrain.accent1"
-          >
-            <AlertIcon color="geneTerrain.accent1" />
-            <AlertDescription>
-              Multiple samples selected. Visualizing the average gene expression
-              values across selected samples.
-            </AlertDescription>
-          </Alert>
-        )}
+        <SampleSummaryComponent
+          samples={selectedSamples}
+          datasetName={selectedDataset?.name || "Unknown Dataset"}
+          visualizeTrigger={visualizeTrigger}
+        />
 
         <Box
           position="relative"
-          bg="white" // CHANGED from secondary to white
+          bg="white"
           borderRadius="md"
           overflow="hidden"
           height="auto"
@@ -175,24 +170,18 @@ const GeneVisualization: React.FC = () => {
           borderColor="geneTerrain.border"
         >
           {isLoadingPoints ? (
-            <Text
-              p={4}
-              color="geneTerrain.textPrimary" // ADDED
-            >
+            <Text p={4} color="geneTerrain.textPrimary">
               Loading points...
             </Text>
           ) : hasPoints ? (
             <GaussianMap
               points={points}
               datasetId={selectedDataset?.id || ""}
-              sampleId={visualizedSample.sampleid || visualizedSample.id}
+              sampleId={getSampleId(visualizedSample)}
               datasets={selectedDataset ? [selectedDataset] : []}
             />
           ) : (
-            <Text
-              p={4}
-              color="geneTerrain.textPrimary" // ADDED
-            >
+            <Text p={4} color="geneTerrain.textPrimary">
               No points available for the selected sample.
             </Text>
           )}

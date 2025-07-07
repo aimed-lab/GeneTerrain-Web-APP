@@ -210,20 +210,33 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
     });
   }, [samples, searchTerm, filterCondition, columnFilters]);
 
-  // Get selected samples
+  // Helper for canonical sample ID
+  const getCanonicalSampleId = (sample: any): string => {
+    return sample.sampleid || sample.sample_id || sample.id || "";
+  };
+
+  // Update selectedSamples computation to use canonical sample ID
   const selectedSamples = useMemo(() => {
     if (!samples) return [];
-    return samples.filter((s) => selectedSampleIds.has(s.id));
+    const result = samples.filter((s) =>
+      selectedSampleIds.has(getCanonicalSampleId(s))
+    );
+    console.log("[DEBUG] Computing selectedSamples:", {
+      selectedSampleIds: Array.from(selectedSampleIds),
+      sampleIds: samples.map(getCanonicalSampleId),
+      selectedSamples: result,
+    });
+    return result;
   }, [samples, selectedSampleIds]);
 
   // Handle sample selection
   const handleSampleSelect = (sample: Sample, multiSelect: boolean) => {
     setSelectedSampleIds((prev) => {
       const newSelection = new Set(multiSelect ? prev : []);
-      if (prev.has(sample.id)) {
-        newSelection.delete(sample.id);
+      if (prev.has(getCanonicalSampleId(sample))) {
+        newSelection.delete(getCanonicalSampleId(sample));
       } else {
-        newSelection.add(sample.id);
+        newSelection.add(getCanonicalSampleId(sample));
       }
       return newSelection;
     });
@@ -245,9 +258,9 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
       filteredSamples.forEach((sample) => {
         if (selected) {
-          newSelection.add(sample.id);
+          newSelection.add(getCanonicalSampleId(sample));
         } else {
-          newSelection.delete(sample.id);
+          newSelection.delete(getCanonicalSampleId(sample));
         }
       });
 
@@ -283,7 +296,7 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
       samples
         .filter((sample) => sample.condition === condition)
         .forEach((sample) => {
-          newSelection.add(sample.id);
+          newSelection.add(getCanonicalSampleId(sample));
         });
       return newSelection;
     });
@@ -452,6 +465,26 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
     }
   }, [selectedDataset]);
 
+  // Add debug log when samples are loaded/set
+  useEffect(() => {
+    if (samples && samples.length > 0) {
+      console.log("[DEBUG] Samples loaded:", samples.slice(0, 5));
+      console.log(
+        "[DEBUG] Sample IDs:",
+        samples.slice(0, 5).map((s) => ({
+          id: s.id,
+          sampleid: s.sampleid,
+          sample_id: (s as any).sample_id,
+        }))
+      );
+    }
+  }, [samples]);
+
+  // Add debug log when selectedSampleIds changes
+  useEffect(() => {
+    console.log("[DEBUG] selectedSampleIds:", Array.from(selectedSampleIds));
+  }, [selectedSampleIds]);
+
   const value = {
     datasets,
     selectedDataset,
@@ -551,6 +584,7 @@ const generateId = () => `gbm-${Math.random().toString(36).substring(2, 10)}`;
 
 export const useSamplesContext = () => {
   const context = useContext(SamplesContext);
+  console.log("[useSamplesContext] context:", context);
   if (context === undefined) {
     throw new Error("useSamplesContext must be used within a SamplesProvider");
   }
