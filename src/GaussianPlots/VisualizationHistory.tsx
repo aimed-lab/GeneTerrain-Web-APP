@@ -185,7 +185,7 @@ export function VisualizationHistory({
   }, [isOpen, datasetId, sampleId, showAllHistory, currentDatasetOnly]);
 
   const saveCurrentState = async () => {
-    alert(sampleId);
+    // alert(sampleId);
     if (!saveName.trim()) return;
     setError(null);
 

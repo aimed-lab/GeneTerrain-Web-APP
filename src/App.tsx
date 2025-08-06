@@ -14,6 +14,7 @@ import ContactContent from "./components/context/ContactContent";
 import { PremiumProvider } from "./components/context/PremiumContext";
 import CustomGeneTerrain from "./pages/CustomGeneTerrain";
 import GBMAnalysis from "./pages/GBMAnalysis";
+import FeedbackModal from "./components/common/FeedbackModal";
 
 const App: React.FC = () => {
   return (
@@ -31,6 +32,7 @@ const App: React.FC = () => {
             <Route path="/custom" element={<CustomGeneTerrain />} />
             <Route path="/gbm-analysis" element={<GBMAnalysis />} />
           </Routes>
+          <FeedbackModal />
         </PremiumProvider>
       </AuthProvider>
     </ChakraProvider>

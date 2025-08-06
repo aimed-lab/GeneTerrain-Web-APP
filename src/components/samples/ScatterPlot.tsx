@@ -208,6 +208,26 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     y: [number, number];
   } | null>(null);
 
+  // Utility to compute square axis ranges
+  function getSquareAxisRanges(
+    xs: number[],
+    ys: number[]
+  ): { x: [number, number]; y: [number, number] } {
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const xLen = maxX - minX;
+    const yLen = maxY - minY;
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const maxLen = Math.max(xLen, yLen);
+    return {
+      x: [centerX - maxLen / 2, centerX + maxLen / 2],
+      y: [centerY - maxLen / 2, centerY + maxLen / 2],
+    };
+  }
+
   const baseLayout = useMemo(
     () => ({
       showlegend: true,
@@ -258,10 +278,9 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
       const xRange = plotlyNodeRef.current.layout?.xaxis?.range;
       const yRange = plotlyNodeRef.current.layout?.yaxis?.range;
       if (xRange && yRange) {
-        setFixedAxisRange({
-          x: [xRange[0], xRange[1]],
-          y: [yRange[0], yRange[1]],
-        });
+        // Make axis ranges square
+        const squareRanges = getSquareAxisRanges(xRange, yRange);
+        setFixedAxisRange(squareRanges);
       }
     }
   }, [plotlyNodeRef.current]);
