@@ -33,6 +33,7 @@ import {
   generateMockDatasets,
 } from "../../services/datasetService";
 import { useSamplesContext } from "../../context/SamplesContext";
+import CombinedDatasetSelector from "../datasets/CombinedDatasetSelector";
 
 // Define necessary interfaces
 interface Point {
@@ -103,15 +104,6 @@ const HomeContent: React.FC = () => {
     loadData();
   }, []);
 
-  // Handle dataset selection
-  const handleDatasetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const datasetId = e.target.value;
-    const dataset = datasets.find((d) => d.id === datasetId) || null;
-    setSelectedDataset(dataset);
-    setSelectedSample(null);
-    setIsMapVisible(false);
-  };
-
   // Handle sample selection
   const handleSampleSelect = (sample: Sample) => {
     setSelectedSample(sample);
@@ -132,6 +124,7 @@ const HomeContent: React.FC = () => {
     if (!selectedDataset || !selectedSample) return;
     setIsMapVisible(true);
   };
+
   return (
     <Container maxW="container.xl" py={8}>
       <MotionBox
@@ -165,33 +158,8 @@ const HomeContent: React.FC = () => {
             </Alert>
           )}
 
-          {/* Dataset selection */}
-          <FormControl>
-            <FormLabel
-              fontWeight="bold"
-              color="geneTerrain.accent2"
-              fontSize="lg"
-            >
-              Select Dataset Type
-            </FormLabel>
-            {isLoading ? (
-              <Skeleton height="40px" mb={4} />
-            ) : (
-              <Select
-                placeholder="Choose a dataset"
-                onChange={handleDatasetChange}
-                bg="white"
-                size="lg"
-                mb={4}
-              >
-                {datasets.map((dataset) => (
-                  <option key={dataset.id} value={dataset.id}>
-                    {dataset.name} ({dataset.samples.length} samples)
-                  </option>
-                ))}
-              </Select>
-            )}
-          </FormControl>
+          {/* Combined Dataset Selector */}
+          <CombinedDatasetSelector isLoading={isLoading} />
 
           {/* Sample selection */}
           {selectedDataset && (

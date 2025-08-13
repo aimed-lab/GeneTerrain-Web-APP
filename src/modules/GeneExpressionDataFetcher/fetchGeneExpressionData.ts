@@ -1,6 +1,7 @@
 import { normalizePoints } from "../../GaussianPlots/GaussianMap";
 import { useSamplesContext } from "../../context/SamplesContext";
 import { Dataset } from "../../types";
+import { getDatasetInfo } from "../../services/datasetService";
 
 // --- Types ---
 interface LayoutItem {
@@ -51,25 +52,20 @@ function generateRandomPoints(count: number) {
   return normalizePoints(points);
 }
 
-// Helper: Fetch layout data (all at once), now supports PanCan template
+// Helper: Fetch layout data using URL from dataset registry
 async function fetchLayoutData(
   selectedDataset: Dataset | null
 ): Promise<LayoutItem[]> {
+  if (!selectedDataset) throw new Error("No dataset selected");
+  const datasetInfo = await getDatasetInfo(selectedDataset.id);
+  if (!datasetInfo || !datasetInfo.layout_url)
+    throw new Error(`No layout URL found for dataset ${selectedDataset.id}`);
+
   let layoutData: LayoutItem[] = [];
   let offset = 0,
     hasMore = true;
-  const isGBM =
-    selectedDataset &&
-    (selectedDataset.id?.toLowerCase().includes("gbm") ||
-      selectedDataset.name?.toLowerCase().includes("gbm"));
-  const cancerType = selectedDataset ? selectedDataset.id : "";
   while (hasMore) {
-    let url = "";
-    if (!isGBM) {
-      url = `https://aimed.uab.edu/apex/gtkb/layout/pancan/${cancerType.toLowerCase()}?offset=${offset}`;
-    } else {
-      url = `https://aimed.uab.edu/apex/gtkb/layout/all?offset=${offset}`;
-    }
+    const url = `${datasetInfo.layout_url}?offset=${offset}`;
     console.log("[GeneTerrain] Layout URL:", url);
     const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch layout data");
@@ -81,45 +77,23 @@ async function fetchLayoutData(
   return layoutData;
 }
 
-// Mapping of sample prefixes to API URLs
-const apiMapping: Record<string, string> = {
-  TCGA: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_GBM/TCGA/",
-  GSM: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/CGGA_Illumina_HiSeq_2000/",
-  CGGA: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/CGGA_Illumina_HiSeq_2000_or_2500/",
-  IVYGAP: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/IvyGap/",
-  GLSS: "https://aimed.uab.edu/apex/gtkb/gene_exp/cleaned_gbm/GLSS/",
-};
-
-// Helper: Fetch gene expression for a single sample, now supports PanCan template
+// Helper: Fetch gene expression for a single sample using URL from dataset registry
 async function fetchSampleGeneData(
   sampleId: string,
   selectedDataset: Dataset | null
 ): Promise<GeneExpItem[]> {
-  // Determine if PanCan dataset
-  // alert(selectedDataset);
-  console.log("selecteddataset", selectedDataset);
-  const isGBM =
-    selectedDataset &&
-    (selectedDataset.id?.toLowerCase().includes("gbm") ||
-      selectedDataset.name?.toLowerCase().includes("gbm"));
+  if (!selectedDataset) throw new Error("No dataset selected");
+  const datasetInfo = await getDatasetInfo(selectedDataset.id);
+  if (!datasetInfo || !datasetInfo.gene_expression_url)
+    throw new Error(
+      `No gene expression URL found for dataset ${selectedDataset.id}`
+    );
 
-  const cancerType = selectedDataset ? selectedDataset.id : "";
-  if (!isGBM) {
-    const url = `https://aimed.uab.edu/apex/gtkb/gene_exp/pancan/${cancerType.toLowerCase()}/${sampleId}`;
-    console.log("[GeneTerrain] Gene Expression URL:", url);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch gene data for ${sampleId}`);
-    return (await res.json()).items;
-  } else {
-    const prefix = sampleId.split("-")[0];
-    const apiUrl = apiMapping[prefix];
-    if (!apiUrl) throw new Error(`No API mapping for ${sampleId}`);
-    const url = `${apiUrl}${sampleId}`;
-    console.log("[GeneTerrain] Gene Expression URL:", url);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch gene data for ${sampleId}`);
-    return (await res.json()).items;
-  }
+  const url = `${datasetInfo.gene_expression_url}${sampleId}`;
+  console.log("[GeneTerrain] Gene Expression URL:", url);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch gene data for ${sampleId}`);
+  return (await res.json()).items;
 }
 
 // --- Main function ---

@@ -15,6 +15,7 @@ import {
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../utils/firebase";
+import { useAuth } from "../../components/context/AuthContext";
 
 interface FormData {
   email: string;
@@ -26,6 +27,8 @@ interface FormData {
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { isAuthenticated } = useAuth();
+
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -34,6 +37,12 @@ const RegisterPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // If already authenticated, redirect to home page
+  if (isAuthenticated) {
+    navigate("/", { replace: true });
+    return null;
+  }
 
   const validateForm = () => {
     const newErrors: Partial<FormData> = {};

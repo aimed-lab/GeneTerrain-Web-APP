@@ -32,9 +32,16 @@ export interface Sample {
   mgmt_status?: string;
 }
 
+export interface CancerGroup {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface Dataset {
   id: string;
   name: string;
   description: string;
   samples: Sample[];
+  cancerGroup?: string; // Add cancer group support
 }

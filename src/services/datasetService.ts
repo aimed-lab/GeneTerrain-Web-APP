@@ -1,7 +1,7 @@
 // Mock data utilities for gene visualization
 
 // Import the types instead of redeclaring them
-import { Dataset, Point } from "../types";
+import { Dataset, Point, CancerGroup } from "../types";
 
 // API endpoint constant
 const DATASET_API_ENDPOINT =
@@ -11,11 +11,26 @@ const DATASET_API_ENDPOINT =
 interface DatasetAPIResponse {
   items: Array<{
     cancer_type: string;
+    cancer_group?: string;
     description: string;
   }>;
   hasMore: boolean;
   count: number;
 }
+
+// Cancer groups configuration
+export const CANCER_GROUPS: CancerGroup[] = [
+  {
+    id: "PANCAN",
+    name: "Pan-Cancer",
+    description: "Cancer datasets from TCGA Pan-Cancer Atlas",
+  },
+  {
+    id: "KIDNEY_CELL",
+    name: "Kidney Cell",
+    description: "Specialized kidney cell datasets",
+  },
+];
 
 // Gene names for mock data
 const geneNames = [
@@ -104,28 +119,21 @@ export function generateMockDatasets(sampleCount: number = 20): Dataset[] {
       id: "GBM",
       name: "Glioblastoma Multiforme",
       description: "Brain tumor gene expression data",
+      cancerGroup: "PANCAN",
     },
-    // {
-    //   id: "CGGA",
-    //   name: "Chinese Glioma Genome Atlas",
-    //   description: "Glioma data collection",
-    // },
-    // {
-    //   id: "COAD",
-    //   name: "Colon Adenocarcinoma",
-    //   description: "Colorectal cancer dataset",
-    // },
-    // {
-    //   id: "LUAD",
-    //   name: "Lung Adenocarcinoma",
-    //   description: "Lung cancer gene expression",
-    // },
+    {
+      id: "KIDNEYCELL",
+      name: "Kidney Cell Dataset",
+      description: "Kidney cell gene expression data",
+      cancerGroup: "KIDNEY_CELL",
+    },
   ];
 
   return datasetTypes.map((type) => ({
     id: type.id,
     name: type.name,
     description: type.description,
+    cancerGroup: type.cancerGroup,
     samples: Array.from({ length: sampleCount }, (_, sampleIndex) => ({
       id: `${type.id}_S${String(sampleIndex + 1).padStart(3, "0")}`,
       name: `${type.id} Sample ${String(sampleIndex + 1).padStart(3, "0")}`,
@@ -168,11 +176,84 @@ async function fetchDatasetsFromAPI(): Promise<Dataset[]> {
       name: item.cancer_type,
       description: item.description,
       samples: [], // Samples will be fetched separately when needed
+      cancerGroup: item.cancer_group || "PANCAN", // Default to PANCAN if not specified
     }));
   } catch (error) {
     console.error("Error fetching datasets from API:", error);
     throw error;
   }
+}
+
+// Function to fetch dataset info by cancer type from registry API
+export async function getDatasetInfo(cancerType: string) {
+  const endpoint = `https://aimed.uab.edu/apex/gtkb/datasets/pancan/all`;
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) throw new Error(`API returned status ${response.status}`);
+    const allDatasets = (await response.json()).items;
+
+    console.log("[DEBUG] allDatasets:", allDatasets, cancerType);
+    // Filter by cancer type
+    const datasetInfo = allDatasets.find(
+      (dataset: any) => dataset.cancer_type === cancerType
+    );
+
+    return datasetInfo || null;
+  } catch (error) {
+    console.error(`Error fetching dataset info for ${cancerType}:`, error);
+    return null;
+  }
+}
+
+// Function to fetch all datasets by cancer group from registry API
+export async function getDatasetsByGroup(cancerGroup: string) {
+  const endpoint = `https://aimed.uab.edu/apex/gtkb/datasets/pancan/all`;
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) throw new Error(`API returned status ${response.status}`);
+    const allDatasets = await response.json();
+
+    // Filter by cancer group and active status
+    return allDatasets.filter(
+      (dataset: any) =>
+        dataset.cancer_group === cancerGroup && dataset.is_active === true
+    );
+  } catch (error) {
+    console.error(`Error fetching datasets for group ${cancerGroup}:`, error);
+    return [];
+  }
+}
+
+// Function to fetch datasets by cancer group
+export async function fetchDatasetsByGroup(
+  cancerGroup?: string
+): Promise<Dataset[]> {
+  try {
+    const allDatasets = await fetchDatasetsFromAPI();
+
+    if (cancerGroup) {
+      return allDatasets.filter(
+        (dataset) => dataset.cancerGroup === cancerGroup
+      );
+    }
+
+    return allDatasets;
+  } catch (error) {
+    console.warn("Falling back to mock datasets due to API error:", error);
+    // Fall back to mock data if API fails
+    const mockDatasets = generateMockDatasets();
+    if (cancerGroup) {
+      return mockDatasets.filter(
+        (dataset) => dataset.cancerGroup === cancerGroup
+      );
+    }
+    return mockDatasets;
+  }
+}
+
+// Function to get cancer groups
+export function getCancerGroups(): CancerGroup[] {
+  return CANCER_GROUPS;
 }
 
 // Function to fetch datasets (now tries API first, falls back to mock data)

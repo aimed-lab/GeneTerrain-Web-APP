@@ -9,6 +9,7 @@ import { Sample, Dataset } from "../types";
 import { useToast } from "@chakra-ui/react";
 import { GBMDataFetcher } from "../modules/GBMDataModule/GBMDataFetcher";
 import { CancerDataFetcherFactory } from "../services/cancer/CancerDataFetcherFactory";
+import { getDatasetInfo } from "../services/datasetService";
 
 interface ColumnFilterType {
   column: string | null;
@@ -433,27 +434,47 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
       setEmbeddingDataMap(new Map());
       return;
     }
-    let allEmbeddingItems: any[] = [];
-    let offset = 0;
-    let hasMore = true;
-    while (hasMore) {
-      const apiUrl = `https://aimed.uab.edu/apex/gtkb/embeddings/${datasetId.toLocaleLowerCase()}?offset=${offset}`;
-      const response = await fetch(apiUrl);
-      if (!response.ok) break;
-      const apiResponse = await response.json();
-      if (!apiResponse.items) break;
-      allEmbeddingItems = allEmbeddingItems.concat(apiResponse.items);
-      hasMore = apiResponse.hasMore;
-      offset += apiResponse.limit || 10000;
+
+    try {
+      // Get dataset info from registry to check for embeddings_url
+      const datasetInfo = await getDatasetInfo(datasetId);
+      let embeddingsUrl: string;
+
+      if (datasetInfo && datasetInfo.embeddings_url) {
+        // Use custom embeddings URL from registry
+        embeddingsUrl = datasetInfo.embeddings_url;
+      } else {
+        // Fallback to default URL pattern
+        embeddingsUrl = `https://aimed.uab.edu/apex/gtkb/embeddings/${datasetId.toLowerCase()}`;
+      }
+
+      let allEmbeddingItems: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const apiUrl = `${embeddingsUrl}?offset=${offset}`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) break;
+        const apiResponse = await response.json();
+        if (!apiResponse.items) break;
+        allEmbeddingItems = allEmbeddingItems.concat(apiResponse.items);
+        hasMore = apiResponse.hasMore;
+        offset += apiResponse.limit || 10000;
+      }
+
+      setEmbeddingDataMap(
+        new Map(
+          allEmbeddingItems.map((item: any) => [
+            item.sampleid,
+            { x: item.x, y: item.y },
+          ])
+        )
+      );
+    } catch (error) {
+      console.error(`Error fetching embeddings for ${datasetId}:`, error);
+      setEmbeddingDataMap(new Map());
     }
-    setEmbeddingDataMap(
-      new Map(
-        allEmbeddingItems.map((item: any) => [
-          item.sampleid,
-          { x: item.x, y: item.y },
-        ])
-      )
-    );
   };
 
   // Fetch embeddings when selectedDataset changes
@@ -482,7 +503,7 @@ export const SamplesProvider: React.FC<SamplesProviderProps> = ({
 
   // Add debug log when selectedSampleIds changes
   useEffect(() => {
-    console.log("[DEBUG] selectedSampleIds:", Array.from(selectedSampleIds));
+    // console.log("[DEBUG] selectedSampleIds:", Array.from(selectedSampleIds));
   }, [selectedSampleIds]);
 
   const value = {
@@ -584,7 +605,7 @@ const generateId = () => `gbm-${Math.random().toString(36).substring(2, 10)}`;
 
 export const useSamplesContext = () => {
   const context = useContext(SamplesContext);
-  console.log("[useSamplesContext] context:", context);
+  // console.log("[useSamplesContext] context:", context);
   if (context === undefined) {
     throw new Error("useSamplesContext must be used within a SamplesProvider");
   }

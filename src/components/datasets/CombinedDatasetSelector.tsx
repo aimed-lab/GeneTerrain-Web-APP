@@ -12,14 +12,9 @@ import {
   Tooltip,
   FormControl,
   FormLabel,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Button,
   VStack,
 } from "@chakra-ui/react";
-import { FaDatabase, FaInfoCircle, FaChevronDown } from "react-icons/fa";
+import { FaDatabase, FaInfoCircle } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Dataset } from "../../types";
 import { useSamplesContext } from "../../context/SamplesContext";
@@ -28,22 +23,15 @@ import {
   getCancerGroups,
 } from "../../services/datasetService";
 
-interface DatasetSelectorProps {
-  datasets: Dataset[];
+interface CombinedDatasetSelectorProps {
   isLoading: boolean;
 }
 
 const MotionBox = motion(Box);
 
-const DatasetSelector: React.FC<DatasetSelectorProps> = ({
-  datasets: initialDatasets,
+const CombinedDatasetSelector: React.FC<CombinedDatasetSelectorProps> = ({
   isLoading,
 }) => {
-  // Create local state to manage datasets including the dynamic GBM dataset
-  const [localDatasets, setLocalDatasets] =
-    useState<Dataset[]>(initialDatasets);
-
-  // Add cancer group state
   const [selectedCancerGroup, setSelectedCancerGroup] = useState<string>("");
   const [filteredDatasets, setFilteredDatasets] = useState<Dataset[]>([]);
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(false);
@@ -59,31 +47,6 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
   } = useSamplesContext();
 
   const cancerGroups = getCancerGroups();
-
-  // Update local datasets when prop datasets change
-  useEffect(() => {
-    setLocalDatasets(initialDatasets);
-  }, [initialDatasets]);
-
-  // Add Glioblastoma Multiforme dataset if it doesn't exist
-  useEffect(() => {
-    // Check if "Glioblastoma Multiforme" dataset is already in the available datasets
-    const gbmDatasetExists = localDatasets.some(
-      (dataset) => dataset.name === "Glioblastoma Multiforme"
-    );
-
-    // If not, add it
-    if (!gbmDatasetExists) {
-      const gbmDataset: Dataset = {
-        id: "gbm",
-        name: "Glioblastoma Multiforme",
-        description: "GBM cancer samples from TCGA and CGGA datasets",
-        samples: [], // Will be populated by the context when selected
-      };
-
-      setLocalDatasets((prev) => [...prev, gbmDataset]);
-    }
-  }, [localDatasets]);
 
   // Handle cancer group change
   const handleCancerGroupChange = async (cancerGroup: string) => {
@@ -110,12 +73,10 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
     }
   };
 
+  // Handle dataset change
   const handleDatasetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const datasetId = e.target.value;
-    const dataset =
-      filteredDatasets.find((d) => d.id === datasetId) ||
-      localDatasets.find((d) => d.id === datasetId) ||
-      null;
+    const dataset = filteredDatasets.find((d) => d.id === datasetId) || null;
     setSelectedDataset(dataset);
 
     // Reset selections when changing datasets
@@ -154,99 +115,60 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
         {isLoading ? (
           <Skeleton height="40px" />
         ) : (
-          <>
-            <FormControl mb={4}>
-              <Flex
-                direction={{ base: "column", md: "row" }}
-                align={{ base: "flex-start", md: "center" }}
-                mb={3}
-                gap={4}
+          <VStack spacing={4} align="stretch">
+            {/* Cancer Group Selector */}
+            <FormControl>
+              <FormLabel
+                fontWeight="bold"
+                color="geneTerrain.accent2"
+                fontSize="lg"
               >
-                {/* Cancer Group Selector */}
-                <Box flex="1">
-                  <FormLabel
-                    minW="150px"
-                    mb={{ base: 2, md: 0 }}
-                    fontWeight="medium"
-                    fontSize="md"
-                    className="label-text"
-                    color="geneTerrain.textPrimary"
-                  >
-                    Select Cancer Group:
-                  </FormLabel>
-                  <Select
-                    placeholder="Choose a cancer group"
-                    value={selectedCancerGroup}
-                    onChange={(e) => handleCancerGroupChange(e.target.value)}
-                    bg="white"
-                    h="45px"
-                    fontSize="md"
-                    color="geneTerrain.textPrimary"
-                    isDisabled={isLoading}
-                    _focus={{ borderColor: "geneTerrain.accent2" }}
-                    borderColor="geneTerrain.border"
-                    sx={{
-                      "& option": {
-                        padding: "10px",
-                        fontSize: "md",
-                      },
-                    }}
-                  >
-                    {cancerGroups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.name} - {group.description}
-                      </option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* Dataset Selector */}
-                <Box flex="1">
-                  <FormLabel
-                    minW="150px"
-                    mb={{ base: 2, md: 0 }}
-                    fontWeight="medium"
-                    fontSize="md"
-                    className="label-text"
-                    color="geneTerrain.textPrimary"
-                  >
-                    Select Dataset:
-                  </FormLabel>
-                  <Select
-                    placeholder="Choose a dataset..."
-                    value={selectedDataset?.id || ""}
-                    onChange={handleDatasetChange}
-                    bg="white"
-                    h="45px"
-                    fontSize="md"
-                    color="geneTerrain.textPrimary"
-                    isDisabled={
-                      isLoading ||
-                      (!selectedCancerGroup && filteredDatasets.length === 0) ||
-                      isLoadingDatasets
-                    }
-                    _focus={{ borderColor: "geneTerrain.accent2" }}
-                    borderColor="geneTerrain.border"
-                    sx={{
-                      "& option": {
-                        padding: "10px",
-                        fontSize: "md",
-                      },
-                    }}
-                  >
-                    {(selectedCancerGroup
-                      ? filteredDatasets
-                      : localDatasets
-                    ).map((dataset) => (
-                      <option key={dataset.id} value={dataset.id}>
-                        {dataset.name} - {dataset.description}
-                      </option>
-                    ))}
-                  </Select>
-                </Box>
-              </Flex>
+                Select Cancer Group
+              </FormLabel>
+              <Select
+                placeholder="Choose a cancer group"
+                value={selectedCancerGroup}
+                onChange={(e) => handleCancerGroupChange(e.target.value)}
+                bg="white"
+                size="lg"
+                isDisabled={isLoading}
+              >
+                {cancerGroups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name} - {group.description}
+                  </option>
+                ))}
+              </Select>
             </FormControl>
 
+            {/* Dataset Selector */}
+            <FormControl>
+              <FormLabel
+                fontWeight="bold"
+                color="geneTerrain.accent2"
+                fontSize="lg"
+              >
+                Select Dataset
+              </FormLabel>
+              <Select
+                placeholder="Choose a dataset"
+                value={selectedDataset?.id || ""}
+                onChange={handleDatasetChange}
+                bg="white"
+                size="lg"
+                isDisabled={
+                  isLoading || !selectedCancerGroup || isLoadingDatasets
+                }
+              >
+                {filteredDatasets.map((dataset) => (
+                  <option key={dataset.id} value={dataset.id}>
+                    {dataset.name} - {dataset.description}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Selected Dataset Info */}
             {selectedDataset && (
               <Box
                 p={4}
@@ -321,7 +243,7 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
                             color="geneTerrain.accent2"
                           />
                           <Text color="geneTerrain.textSecondary">
-                            {selectedCancerGroup || "All"} dataset
+                            {selectedCancerGroup} dataset
                           </Text>
                         </Flex>
                       </Tooltip>
@@ -330,11 +252,11 @@ const DatasetSelector: React.FC<DatasetSelectorProps> = ({
                 </Box>
               </Box>
             )}
-          </>
+          </VStack>
         )}
       </Box>
     </MotionBox>
   );
 };
 
-export default DatasetSelector;
+export default CombinedDatasetSelector;

@@ -15,7 +15,7 @@ import {
   FormErrorMessage,
   useToast,
 } from "@chakra-ui/react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import {
   signInWithEmailAndPassword,
@@ -33,14 +33,25 @@ interface LoginFormData {
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  // Get the page user was trying to access
+  const from = location.state?.from?.pathname || "/";
+
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
     password: "",
   });
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // If already authenticated, redirect to home page
+  if (isAuthenticated) {
+    navigate("/", { replace: true });
+    return null;
+  }
 
   const validateForm = () => {
     const newErrors: Partial<LoginFormData> = {};
@@ -77,7 +88,8 @@ const LoginPage: React.FC = () => {
         status: "success",
         duration: 3000,
       });
-      navigate("/");
+      // Navigate to the page user was trying to access, or home
+      navigate(from, { replace: true });
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -104,7 +116,8 @@ const LoginPage: React.FC = () => {
         status: "success",
         duration: 3000,
       });
-      navigate("/"); // Changed from "/dashboard" to "/" for home page
+      // Navigate to the page user was trying to access, or home
+      navigate(from, { replace: true });
     } catch (error: any) {
       toast({
         title: "Social login failed",
