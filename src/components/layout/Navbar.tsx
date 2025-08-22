@@ -121,6 +121,7 @@ const Navbar: React.FC = () => {
               </Box>
             </Tooltip>
             <NavLink to="/features">Features</NavLink>
+            <NavLink to="/docs">Docs</NavLink>
             <NavLink to="/about">About</NavLink>
             <NavLink to="/contact">Contact</NavLink>
           </HStack>
@@ -230,6 +231,7 @@ const Navbar: React.FC = () => {
               </Tag>
             </Box>
             <NavLink to="/features">Features</NavLink>
+            <NavLink to="/docs">Docs</NavLink>
             <NavLink to="/about">About</NavLink>
             <NavLink to="/contact">Contact</NavLink>
             {!isAuthenticated && <NavLink to="/login">Sign In</NavLink>}

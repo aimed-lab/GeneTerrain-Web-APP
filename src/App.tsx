@@ -15,6 +15,12 @@ import Layout from "./components/layout/Layout";
 import { AuthProvider } from "./components/context/AuthContext";
 import HomeContent from "./components/context/HomeContent";
 import FeaturesContent from "./components/context/FeaturesContent";
+import DocumentationPage from "./pages/DocumentationPage";
+import WhatIsGeneTerrain from "./pages/docs/WhatIsGeneTerrain";
+import BuiltInDatasets from "./pages/docs/BuiltInDatasets";
+import GeneExpressionVisualization from "./pages/docs/GeneExpressionVisualization";
+import CaseStudyGBMClinician from "./pages/docs/CaseStudyGBMClinician";
+import FAQ from "./pages/docs/FAQ";
 import AboutContent from "./components/context/AboutContent";
 import ContactContent from "./components/context/ContactContent";
 import { PremiumProvider } from "./components/context/PremiumContext";
@@ -49,6 +55,24 @@ const App: React.FC = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/features" element={<FeaturesContent />} />
+            <Route path="/docs" element={<DocumentationPage />} />
+            <Route
+              path="/docs/what-is-geneterrain"
+              element={<WhatIsGeneTerrain />}
+            />
+            <Route
+              path="/docs/built-in-datasets"
+              element={<BuiltInDatasets />}
+            />
+            <Route
+              path="/docs/gene-expression-visualization"
+              element={<GeneExpressionVisualization />}
+            />
+            <Route
+              path="/docs/case-study-gbm-clinician"
+              element={<CaseStudyGBMClinician />}
+            />
+            <Route path="/docs/faq" element={<FAQ />} />
             <Route path="/about" element={<AboutContent />} />
             <Route path="/contact" element={<ContactContent />} />
 
