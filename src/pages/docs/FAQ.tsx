@@ -51,24 +51,24 @@ const FAQ: React.FC = () => {
       color: "green",
       questions: [
         {
-                      question: "How do I get started with GeneTerrain?",
-            answer:
-              "Simply sign up for an account, log in, and select a built-in cancer dataset (TCGA, GBM, or Kidney). No data preparation or programming required - you can start analyzing immediately.",
+          question: "How do I get started with GeneTerrain?",
+          answer:
+            "Simply sign up for an account, log in, and select a built-in cancer dataset (TCGA, GBM, or Kidney). No data preparation or programming required - you can start analyzing immediately.",
         },
         {
-                      question: "Do I need programming skills to use GeneTerrain?",
-            answer:
-              "No programming skills are required! GeneTerrain is designed as a web-based, point-and-click interface. All analysis tools are accessible through intuitive buttons and menus.",
+          question: "Do I need programming skills to use GeneTerrain?",
+          answer:
+            "No programming skills are required! GeneTerrain is designed as a web-based, point-and-click interface. All analysis tools are accessible through intuitive buttons and menus.",
         },
         {
-                      question: "What browsers are supported?",
-            answer:
-              "GeneTerrain works on all modern browsers including Chrome, Firefox, Safari, and Edge. We recommend using the latest version of Chrome for the best experience.",
+          question: "What browsers are supported?",
+          answer:
+            "GeneTerrain works on all modern browsers including Chrome, Firefox, Safari, and Edge. We recommend using the latest version of Chrome for the best experience.",
         },
         {
-                      question: "Is there a mobile app available?",
-            answer:
-              "GeneTerrain is a web-based application that works on any device with a web browser. While optimized for desktop use, it's also accessible on tablets and mobile devices.",
+          question: "Is there a mobile app available?",
+          answer:
+            "GeneTerrain is a web-based application that works on any device with a web browser. While optimized for desktop use, it's also accessible on tablets and mobile devices.",
         },
       ],
     },
@@ -78,9 +78,9 @@ const FAQ: React.FC = () => {
       color: "blue",
       questions: [
         {
-                      question: "What datasets are available in GeneTerrain?",
-            answer:
-              "GeneTerrain includes three pre-loaded cancer datasets: TCGA Pan-Cancer Atlas (10,000+ samples), GBM Glioblastoma (1,500+ samples), and Kidney Cell (800+ samples). All datasets include comprehensive clinical metadata.",
+          question: "What datasets are available in GeneTerrain?",
+          answer:
+            "GeneTerrain includes three pre-loaded cancer datasets: TCGA Pan-Cancer Atlas (10,000+ samples), GBM Glioblastoma (1,500+ samples), and Kidney Cell (800+ samples). All datasets include comprehensive clinical metadata.",
         },
         {
           question: "Can I upload my own data?",
@@ -88,9 +88,9 @@ const FAQ: React.FC = () => {
             "Yes! The Custom GeneTerrain feature allows you to upload your own gene expression and layout files in CSV format. See the Custom GeneTerrain documentation for supported file formats.",
         },
         {
-                      question: "What file formats are supported for custom uploads?",
-            answer:
-              "GeneTerrain supports CSV and TSV files. Layout files need Gene, X, and Y columns, while expression files need a Gene column plus condition columns with numeric values.",
+          question: "What file formats are supported for custom uploads?",
+          answer:
+            "GeneTerrain supports CSV and TSV files. Layout files need Gene, X, and Y columns, while expression files need a Gene column plus condition columns with numeric values.",
         },
         {
           question: "How is the data quality ensured?",
@@ -105,9 +105,9 @@ const FAQ: React.FC = () => {
       color: "purple",
       questions: [
         {
-                      question: "What are the different visualization layers?",
-            answer:
-              "GeneTerrain offers four visualization layers: Terrain View (full Gaussian heatfield), Contour View (isoline visualization), Peak View (positive expression only), and Valley View (negative expression only).",
+          question: "What are the different visualization layers?",
+          answer:
+            "GeneTerrain offers four visualization layers: Terrain View (full Gaussian heatfield), Contour View (isoline visualization), Peak View (positive expression only), and Valley View (negative expression only).",
         },
         {
           question: "How do I interpret the 3D terrain maps?",
@@ -132,9 +132,9 @@ const FAQ: React.FC = () => {
       color: "teal",
       questions: [
         {
-                      question: "How can clinicians use GeneTerrain?",
-            answer:
-              "Clinicians can use GeneTerrain for treatment decision support, patient stratification, biomarker discovery, and tumor board presentations. The platform provides evidence-based insights in minutes.",
+          question: "How can clinicians use GeneTerrain?",
+          answer:
+            "Clinicians can use GeneTerrain for treatment decision support, patient stratification, biomarker discovery, and tumor board presentations. The platform provides evidence-based insights in minutes.",
         },
         {
           question: "What clinical metadata is available?",
@@ -142,14 +142,14 @@ const FAQ: React.FC = () => {
             "Clinical metadata includes patient demographics, tumor information, molecular markers (IDH, MGMT, EGFR), treatment data, and survival outcomes. This enables comprehensive clinical analysis.",
         },
         {
-                      question: "Can I export results for clinical reports?",
-            answer:
-              "Yes! GeneTerrain allows you to export high-resolution images, CSV data, and summary reports suitable for clinical documentation, tumor board presentations, and patient discussions.",
+          question: "Can I export results for clinical reports?",
+          answer:
+            "Yes! GeneTerrain allows you to export high-resolution images, CSV data, and summary reports suitable for clinical documentation, tumor board presentations, and patient discussions.",
         },
         {
-                      question: "Is the platform suitable for clinical decision-making?",
-            answer:
-              "GeneTerrain provides evidence-based insights that can support clinical decisions. However, all findings should be interpreted in the context of clinical expertise and validated through appropriate clinical pathways.",
+          question: "Is the platform suitable for clinical decision-making?",
+          answer:
+            "GeneTerrain provides evidence-based insights that can support clinical decisions. However, all findings should be interpreted in the context of clinical expertise and validated through appropriate clinical pathways.",
         },
       ],
     },
@@ -159,14 +159,14 @@ const FAQ: React.FC = () => {
       color: "orange",
       questions: [
         {
-                      question: "Can I use GeneTerrain for research publications?",
-            answer:
-              "Absolutely! GeneTerrain generates publication-ready visualizations and data exports. Many researchers use the platform for exploratory analysis, hypothesis generation, and figure creation.",
+          question: "Can I use GeneTerrain for research publications?",
+          answer:
+            "Absolutely! GeneTerrain generates publication-ready visualizations and data exports. Many researchers use the platform for exploratory analysis, hypothesis generation, and figure creation.",
         },
         {
-                      question: "What statistical analyses are available?",
-            answer:
-              "GeneTerrain includes pathway enrichment analysis, statistical significance testing, correlation analysis, and comparative genomics tools. Results include P-values and effect sizes.",
+          question: "What statistical analyses are available?",
+          answer:
+            "GeneTerrain includes pathway enrichment analysis, statistical significance testing, correlation analysis, and comparative genomics tools. Results include P-values and effect sizes.",
         },
         {
           question: "Can I collaborate with other researchers?",
@@ -174,9 +174,9 @@ const FAQ: React.FC = () => {
             "Yes! You can share analysis results, export data for collaboration, and use the platform for team-based research projects. The web-based nature facilitates remote collaboration.",
         },
         {
-                      question: "Is there support for educational use?",
-            answer:
-              "GeneTerrain is excellent for teaching genomics and bioinformatics. Built-in tutorials, guided workflows, and educational datasets make it suitable for classroom and laboratory instruction.",
+          question: "Is there support for educational use?",
+          answer:
+            "GeneTerrain is excellent for teaching genomics and bioinformatics. Built-in tutorials, guided workflows, and educational datasets make it suitable for classroom and laboratory instruction.",
         },
       ],
     },
@@ -191,19 +191,19 @@ const FAQ: React.FC = () => {
             "Check our troubleshooting guide first. If issues persist, contact our support team through the feedback form. We typically respond within 24 hours.",
         },
         {
-                      question: "How do I save my analysis?",
-            answer:
-              "GeneTerrain automatically saves your analysis state. You can also export results as images or CSV files, and save specific views for later reference.",
+          question: "How do I save my analysis?",
+          answer:
+            "GeneTerrain automatically saves your analysis state. You can also export results as images or CSV files, and save specific views for later reference.",
         },
         {
-                      question: "Is my data secure?",
-            answer:
-              "Yes! GeneTerrain uses industry-standard security measures. Built-in datasets are anonymized, and custom uploads are processed securely. We do not store sensitive patient information.",
+          question: "Is my data secure?",
+          answer:
+            "Yes! GeneTerrain uses industry-standard security measures. Built-in datasets are anonymized, and custom uploads are processed securely. We do not store sensitive patient information.",
         },
         {
-                      question: "Can I access GeneTerrain offline?",
-            answer:
-              "GeneTerrain requires an internet connection as it's a web-based application. This ensures you always have access to the latest features and data updates.",
+          question: "Can I access GeneTerrain offline?",
+          answer:
+            "GeneTerrain requires an internet connection as it's a web-based application. This ensures you always have access to the latest features and data updates.",
         },
       ],
     },
@@ -230,7 +230,7 @@ const FAQ: React.FC = () => {
     },
     {
       title: "Clinical Applications",
-              description: "Using GeneTerrain in clinical practice",
+      description: "Using GeneTerrain in clinical practice",
       icon: FaUserMd,
       color: "teal",
     },
@@ -250,9 +250,9 @@ const FAQ: React.FC = () => {
             Frequently Asked Questions
           </Heading>
           <Text fontSize="lg" color="gray.600" maxW="3xl" mx="auto">
-                         Find answers to common questions about GeneTerrain. Can't find
-             what you're looking for? Contact our support team through the
-             feedback form.
+            Find answers to common questions about GeneTerrain. Can't find what
+            you're looking for? Contact our support team through the feedback
+            form.
           </Text>
         </Box>
 
@@ -503,10 +503,10 @@ const FAQ: React.FC = () => {
           <Box>
             <AlertTitle>Still Need Help?</AlertTitle>
             <AlertDescription>
-                             Can't find the answer you're looking for? Contact our support team
-               through the feedback form in the bottom right corner of the
-               application. We're here to help you get the most out of
-               GeneTerrain.
+              Can't find the answer you're looking for? Contact our support team
+              through the feedback form in the bottom right corner of the
+              application. We're here to help you get the most out of
+              GeneTerrain.
             </AlertDescription>
           </Box>
         </Alert>
@@ -516,7 +516,7 @@ const FAQ: React.FC = () => {
           <CardBody p={8}>
             <VStack spacing={6} align="stretch">
               <Heading size="xl" textAlign="center" mb={4}>
-                Pro Tips for GeneTerrain AI
+                Pro Tips for GeneTerrain
               </Heading>
 
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>

@@ -90,7 +90,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/what-is-geneterrain",
         category: "Welcome",
         content:
-          "GeneTerrain AI transforms complex gene expression data into intuitive 3D terrain maps where mountains and valleys represent gene expression patterns. No programming required, web-based interface, pre-loaded cancer datasets, clinical metadata integration.",
+          "GeneTerrain transforms complex gene expression data into intuitive 3D terrain maps where mountains and valleys represent gene expression patterns. No programming required, web-based interface, pre-loaded cancer datasets, clinical metadata integration.",
         keywords: [
           "introduction",
           "overview",
@@ -107,7 +107,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/built-in-datasets",
         category: "Welcome",
         content:
-          "GeneTerrain AI comes with pre-loaded cancer datasets ready for immediate analysis. TCGA Pan-Cancer Atlas, GBM Glioblastoma, Kidney Cell datasets. No upload required, start analyzing immediately.",
+          "GeneTerrain comes with pre-loaded cancer datasets ready for immediate analysis. TCGA Pan-Cancer Atlas, GBM Glioblastoma, Kidney Cell datasets. No upload required, start analyzing immediately.",
         keywords: [
           "datasets",
           "TCGA",
@@ -124,7 +124,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/case-study-gbm-clinician",
         category: "Case Studies",
         content:
-          "Case study showing how clinicians use GeneTerrain AI for GBM analysis. EGFR-high vs EGFR-low comparison, pathway analysis, treatment decision support, clinical relevance.",
+          "Case study showing how clinicians use GeneTerrain for GBM analysis. EGFR-high vs EGFR-low comparison, pathway analysis, treatment decision support, clinical relevance.",
         keywords: [
           "case study",
           "GBM",
@@ -141,7 +141,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/faq",
         category: "Support",
         content:
-          "Frequently asked questions about GeneTerrain AI. Getting started, data upload, terrain visualization, clinical use, research applications, troubleshooting.",
+          "Frequently asked questions about GeneTerrain. Getting started, data upload, terrain visualization, clinical use, research applications, troubleshooting.",
         keywords: [
           "FAQ",
           "questions",
@@ -157,7 +157,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/getting-started",
         category: "Getting Started",
         content:
-          "Quick start guide for GeneTerrain AI. Sign up, choose dataset, explore terrain, compare samples, export results. Step-by-step instructions.",
+          "Quick start guide for GeneTerrain. Sign up, choose dataset, explore terrain, compare samples, export results. Step-by-step instructions.",
         keywords: [
           "getting started",
           "quick start",
@@ -172,7 +172,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/gene-expression-visualization",
         category: "Core Workflows",
         content:
-          "Master the core visualization workflow in GeneTerrain AI. Learn how to generate, explore, and analyze 3D terrain maps with interactive tools, multiple visualization layers, lasso selection, and gene interactions.",
+          "Master the core visualization workflow in GeneTerrain. Learn how to generate, explore, and analyze 3D terrain maps with interactive tools, multiple visualization layers, lasso selection, and gene interactions.",
         keywords: [
           "gene expression",
           "visualization",
@@ -191,7 +191,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/terrain-visualization",
         category: "Core Workflows",
         content:
-          "Learn how to use 3D terrain visualizations in GeneTerrain AI. Zoom, pan, select regions, explore gene clusters, understand elevation patterns.",
+          "Learn how to use 3D terrain visualizations in GeneTerrain. Zoom, pan, select regions, explore gene clusters, understand elevation patterns.",
         keywords: [
           "terrain",
           "3D",
@@ -209,7 +209,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/pathway-analysis",
         category: "Core Workflows",
         content:
-          "Analyze biological pathways using GeneTerrain AI. Pathway enrichment, statistical significance, gene clusters, biological processes.",
+          "Analyze biological pathways using GeneTerrain. Pathway enrichment, statistical significance, gene clusters, biological processes.",
         keywords: [
           "pathway",
           "enrichment",
@@ -225,7 +225,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/sample-comparison",
         category: "Core Workflows",
         content:
-          "Compare different samples and conditions in GeneTerrain AI. Side-by-side analysis, control vs treatment, cohort comparison.",
+          "Compare different samples and conditions in GeneTerrain. Side-by-side analysis, control vs treatment, cohort comparison.",
         keywords: [
           "comparison",
           "samples",
@@ -241,7 +241,7 @@ const DocumentationPage: React.FC = () => {
         path: "/docs/save-export",
         category: "Core Workflows",
         content:
-          "Save your analysis and export results from GeneTerrain AI. High-resolution images, CSV data, publication-ready figures.",
+          "Save your analysis and export results from GeneTerrain. High-resolution images, CSV data, publication-ready figures.",
         keywords: [
           "export",
           "save",
@@ -397,7 +397,7 @@ const DocumentationPage: React.FC = () => {
                 bgGradient="linear(to-r, geneTerrain.accent1, geneTerrain.accent2)"
                 bgClip="text"
               >
-                GeneTerrain AI Documentation
+                GeneTerrain Documentation
               </Heading>
               <Text fontSize="lg" color="gray.600" maxW="2xl" mx="auto">
                 Transform complex gene expression data into intuitive 3D terrain
@@ -459,7 +459,7 @@ const DocumentationPage: React.FC = () => {
                   <Badge colorScheme="green" p={2} borderRadius="md">
                     1
                   </Badge>
-                  <Text>Sign up and log in to GeneTerrain AI</Text>
+                  <Text>Sign up and log in to GeneTerrain</Text>
                 </HStack>
                 <HStack spacing={4}>
                   <Badge colorScheme="green" p={2} borderRadius="md">
