@@ -20,6 +20,7 @@ import WhatIsGeneTerrain from "./pages/docs/WhatIsGeneTerrain";
 import BuiltInDatasets from "./pages/docs/BuiltInDatasets";
 import GeneExpressionVisualization from "./pages/docs/GeneExpressionVisualization";
 import CaseStudyGBMClinician from "./pages/docs/CaseStudyGBMClinician";
+import CaseStudies from "./pages/docs/CaseStudies";
 import FAQ from "./pages/docs/FAQ";
 import AboutContent from "./components/context/AboutContent";
 import ContactContent from "./components/context/ContactContent";
@@ -72,6 +73,7 @@ const App: React.FC = () => {
               path="/docs/case-study-gbm-clinician"
               element={<CaseStudyGBMClinician />}
             />
+            <Route path="/docs/case-studies" element={<CaseStudies />} />
             <Route path="/docs/faq" element={<FAQ />} />
             <Route path="/about" element={<AboutContent />} />
             <Route path="/contact" element={<ContactContent />} />

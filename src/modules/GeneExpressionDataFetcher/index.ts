@@ -1,1 +1,2 @@
 export { fetchGeneExpressionData } from "./fetchGeneExpressionData";
+

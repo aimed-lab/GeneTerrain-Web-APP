@@ -71,6 +71,7 @@ import { Link as RouterLink } from "react-router-dom";
 import WhatIsGeneTerrain from "./docs/WhatIsGeneTerrain";
 import BuiltInDatasets from "./docs/BuiltInDatasets";
 import CaseStudyGBMClinician from "./docs/CaseStudyGBMClinician";
+import CaseStudies from "./docs/CaseStudies";
 import FAQ from "./docs/FAQ";
 import GeneExpressionVisualization from "./docs/GeneExpressionVisualization";
 
@@ -117,6 +118,25 @@ const DocumentationPage: React.FC = () => {
           "no upload",
           "cancer data",
           "immediate analysis",
+        ],
+      },
+      {
+        title: "Case Studies",
+        path: "/docs/case-studies",
+        category: "Case Studies",
+        content:
+          "Comprehensive case studies showing real-world applications of GeneTerrain. GBM sample exploration, custom gene expression analysis, educational exploration of cancer genomics. Clinical research, pattern discovery, data visualization.",
+        keywords: [
+          "case studies",
+          "GBM",
+          "sample exploration",
+          "custom analysis",
+          "education",
+          "clinical research",
+          "pattern discovery",
+          "data visualization",
+          "real-world",
+          "applications",
         ],
       },
       {
@@ -328,6 +348,7 @@ const DocumentationPage: React.FC = () => {
       icon: FaMicroscope,
       color: "teal",
       items: [
+        { title: "Case Studies Overview", id: "case-studies" },
         { title: "GBM - Clinician Focus", id: "case-study-gbm-clinician" },
         { title: "Kidney Cell Research", id: "case-study-kidney" },
         { title: "Pan-Cancer PhD", id: "case-study-pan-cancer" },
@@ -535,6 +556,9 @@ const DocumentationPage: React.FC = () => {
 
       case "case-study-gbm-clinician":
         return <CaseStudyGBMClinician />;
+
+      case "case-studies":
+        return <CaseStudies />;
 
       case "faq":
         return <FAQ />;
