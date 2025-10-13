@@ -34,6 +34,7 @@ import negativeLayerImg from "../assets/layers/valley_view.png";
 import { useTheme } from "@chakra-ui/react";
 import { hexToRgbArray, getSpectralColorFromTheme } from "../utils/colorUtils"; // We'll create this utility next
 import { ComparisonPopup } from "./ComparisonPopup";
+import GeneDetailsPanel from "../components/common/GeneDetailsPanel";
 
 // Add this debounce utility at the top with other imports
 // const debounce = (func: Function, wait: number) => {
@@ -110,7 +111,7 @@ export function GaussianMap({
   datasets,
 }: GaussianMapProps) {
   console.log(points);
-  const theme = useTheme(); // <-- Add this line
+    const theme = useTheme(); // <-- Add this line
 
   const glCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -717,19 +718,23 @@ export function GaussianMap({
         const rectHeight = 14 / viewport.scale;
 
         // Choose color based on point value
-        if (point.value > 1) {
-          // Strong positive - red background
-          ctx.fillStyle = "rgba(220, 53, 69, 0.8)"; // Bootstrap danger
-        } else if (point.value < -1) {
-          // Strong negative - blue background
-          ctx.fillStyle = "rgba(13, 110, 253, 0.8)"; // Bootstrap primary
-        } else if (Math.abs(point.value) > 0.5) {
-          // Moderate values - grey background
-          ctx.fillStyle = "rgba(52, 58, 64, 0.8)"; // Bootstrap dark
-        } else {
-          // Minimal values - light grey background
-          ctx.fillStyle = "rgba(108, 117, 125, 0.7)"; // Bootstrap secondary
-        }
+        // if (point.value > 1) {
+        //   // Strong positive - red background
+        //   ctx.fillStyle = "rgba(220, 53, 69, 0.8)"; // Bootstrap danger
+        // } else if (point.value < -1) {
+        //   // Strong negative - blue background
+        //   ctx.fillStyle = "rgba(13, 110, 253, 0.8)"; // Bootstrap primary
+        // } else if (Math.abs(point.value) > 0.5) {
+        //   // Moderate values - grey background
+        //   ctx.fillStyle = "rgba(52, 58, 64, 0.8)"; // Bootstrap dark
+        // } else {
+        //   // Minimal values - light grey background
+        //   ctx.fillStyle = "rgba(108, 117, 125, 0.7)"; // Bootstrap secondary
+        // }
+
+        // No baackground color for text
+        ctx.fillStyle = "rgba(97, 94, 94, 0)";
+
 
         // Position the label above the point
         const labelY = point.y - (rectHeight + 5 / viewport.scale);
@@ -756,7 +761,10 @@ export function GaussianMap({
         ctx.fill();
 
         // Draw text
-        ctx.fillStyle = "white";
+        // ctx.fillStyle = "white";
+        
+        // Text color black for better visibility on light backgrounds
+        ctx.fillStyle="black"
         ctx.fillText(point.geneName, point.x, labelY);
       });
     }
@@ -1271,20 +1279,20 @@ export function GaussianMap({
 
         {popup.visible && popup.point && popup.position && (
           <div
-            className="position-absolute rounded shadow p-3"
-            style={{
-              left: Math.min(popup.position.x + 10, CANVAS_WIDTH - 256 - 10),
-              top: Math.min(popup.position.y + 10, CANVAS_HEIGHT - 200),
-              width: "16rem",
-              zIndex: 1000,
-              backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-              color: theme.colors?.geneTerrain?.textPrimary || "#333333",
-              border: `1px solid ${
-                theme.colors?.geneTerrain?.border || "#E2E8F0"
-              }`,
-            }}
+            // className="position-absolute rounded shadow p-3"
+            // style={{
+            //   left: Math.min(popup.position.x + 10, CANVAS_WIDTH - 256 - 10),
+            //   top: Math.min(popup.position.y + 10, CANVAS_HEIGHT - 200),
+            //   width: "16rem",
+            //   zIndex: 1000,
+            //   backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
+            //   color: theme.colors?.geneTerrain?.textPrimary || "#333333",
+            //   border: `1px solid ${
+            //     theme.colors?.geneTerrain?.border || "#E2E8F0"
+            //   }`,
+            // }}
           >
-            <button
+            {/* <button
               onClick={() => setPopup((prev) => ({ ...prev, visible: false }))}
               className="btn-close btn-close-white position-absolute"
               style={{ top: "8px", right: "8px" }}
@@ -1304,10 +1312,10 @@ export function GaussianMap({
               }}
             >
               ID: {popup.point.geneId}
-            </p>
+            </p> */}
 
             {/* Add value color based on expression level */}
-            <p
+            {/* <p
               className="small mb-2"
               style={{
                 color: getSpectralColor(popup.point.value, theme),
@@ -1336,10 +1344,10 @@ export function GaussianMap({
               style={{ color: theme.colors?.geneTerrain?.gray || "#687488" }}
             >
               {popup.point.description}
-            </p>
+            </p> */}
 
             {/* Add the exclude button */}
-            <div className="d-flex justify-content-end mt-3">
+            {/* <div className="d-flex justify-content-end mt-3">
               <button
                 className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2"
                 onClick={() => popup.point && excludeGene(popup.point.geneId)}
@@ -1353,7 +1361,14 @@ export function GaussianMap({
                 <i className="bi bi-trash"></i>
                 Remove Gene
               </button>
-            </div>
+            </div> */}
+            {/* open details window on left     */}
+            <GeneDetailsPanel
+              selectedGene={popup.point}
+              data={points}
+              onJumpTo={(g) => console.log("jump to:", g)}
+              onClose={() => setPopup({ visible: false, point: null, position: null })}
+            />  
           </div>
         )}
 

@@ -268,7 +268,7 @@ const GeneSelectionSummary: React.FC<GeneSelectionSummaryProps> = ({
                   </ul>
 
                   <div className="tab-content">
-                    <div
+                    {/* <div
                       className="tab-pane fade show active"
                       id={`genes-${idx}`}
                       role="tabpanel"
@@ -314,7 +314,129 @@ const GeneSelectionSummary: React.FC<GeneSelectionSummaryProps> = ({
                           })}
                         </tbody>
                       </table>
+                    </div> */}
+
+                    {/* ───────── Mini Bar Chart (below Genes/Pathways tabs) ───────── */}
+                  <div 
+                    className="tab-pane fade show active small"
+                      id={`genes-${idx}`}
+                      role="tabpanel"
+                  >
+                    <div className=" mb-1" style={{ color: "#666666" }}>
+                      Gene values (bar chart)
                     </div>
+
+                    {(() => {
+                      const items = genesInRegion.slice(0, 5);
+                      const MAX_ABS = 4; // ← fixed range: -3 to +3
+                      const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+
+                      if (!items.length) return null;
+
+                      return (
+                        <div>
+                          {items.map((gene, i) => {
+                            const v = gene.value ?? 0;
+                            const ratio = clamp01(Math.abs(v) / MAX_ABS);
+                            const isPositive = v >= 0;
+                            const negWidthPct = isPositive ? 0 : Math.round(ratio * 100);
+                            const posWidthPct = isPositive ? Math.round(ratio * 100) : 0;
+                            const color = isPositive ? "#d13a3aff" : "#3182CE";
+
+                            return (
+                              <div
+                                key={i}
+                                className="d-flex align-items-center mb-1"
+                                style={{ gap: "6px" }}
+                              >
+                                {/* X-axis label: gene name */}
+                                <div
+                                  style={{
+                                    width: 120,
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    color: "#333",
+                                  }}
+                                  title={gene.geneName}
+                                >
+                                  {gene.geneName}
+                                </div>
+
+                                {/* Dual-direction bar (negative left, positive right) */}
+                                <div
+                                  style={{
+                                    flex: 1,
+                                    position: "relative",
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr",
+                                    height: 12,
+                                    background: "#F1F5F9",
+                                    borderRadius: 4,
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  {/* center zero axis */}
+                                  <div
+                                    aria-hidden
+                                    style={{
+                                      position: "absolute",
+                                      left: "50%",
+                                      top: 0,
+                                      bottom: 0,
+                                      width: 1,
+                                      background: "#CBD5E1",
+                                    }}
+                                  />
+
+                                  {/* LEFT half (negative values) */}
+                                  <div style={{ position: "relative" }}>
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        right: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        width: `${negWidthPct}%`,
+                                        background: "#3182CE",
+                                        transition: "width 0.2s ease",
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* RIGHT half (positive values) */}
+                                  <div style={{ position: "relative" }}>
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        left: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        width: `${posWidthPct}%`,
+                                        background: "#d13a3aff",
+                                        transition: "width 0.2s ease",
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Y-axis value */}
+                                <div
+                                  style={{
+                                    width: 60,
+                                    textAlign: "right",
+                                    color: color,
+                                  }}
+                                >
+                                  {v.toFixed(2)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
                     <div
                       className="tab-pane fade"
                       id={`pathways-${idx}`}
