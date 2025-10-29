@@ -111,7 +111,7 @@ export function GaussianMap({
   datasets,
 }: GaussianMapProps) {
   console.log(points);
-    const theme = useTheme(); // <-- Add this line
+  const theme = useTheme(); // <-- Add this line
 
   const glCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -540,7 +540,7 @@ export function GaussianMap({
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
       console.error(
         "Unable to initialize the shader program: " +
-          gl.getProgramInfoLog(shaderProgram)
+        gl.getProgramInfoLog(shaderProgram)
       );
       return null;
     }
@@ -562,10 +562,10 @@ export function GaussianMap({
       lasso.active || lasso.regions.length === 0
         ? filteredPoints
         : filteredPoints.filter((point) =>
-            lasso.regions.some((region) =>
-              isPointInPolygon(point, region.points)
-            )
-          );
+          lasso.regions.some((region) =>
+            isPointInPolygon(point, region.points)
+          )
+        );
 
     // Clear both canvases
     gl.viewport(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -762,9 +762,9 @@ export function GaussianMap({
 
         // Draw text
         // ctx.fillStyle = "white";
-        
         // Text color black for better visibility on light backgrounds
-        ctx.fillStyle="black"
+        ctx.font = `${fontSize / viewport.scale}px Arial`;           // default weight (normal)
+        ctx.fillStyle = "black"
         ctx.fillText(point.geneName, point.x, labelY);
       });
     }
@@ -777,6 +777,127 @@ export function GaussianMap({
     initShaderProgram,
     theme,
   ]); // Add theme to deps
+
+  // Helper: convert world -> screen given a viewport
+  const worldToScreen = (wx: number, wy: number, vp: ViewportState) => ({
+    x: wx * vp.scale + vp.offset.x,
+    y: wy * vp.scale + vp.offset.y,
+  });
+
+
+  const focusOnGenePoint = useCallback(
+    (gene: Point, opts?: { durationPan?: number; durationZoom?: number; extraZoom?: number }) => {
+      cancelFocusAnimation();
+
+      // Tunables
+      const durationPan = opts?.durationPan ?? 1800; // ms (slow)
+      const durationZoom = opts?.durationZoom ?? 900;  // ms (faster)
+      const extraZoom = opts?.extraZoom ?? 3.2;
+
+      const centerX = CANVAS_WIDTH / 2;
+      const centerY = CANVAS_HEIGHT / 2;
+
+      // Capture starting viewport once
+      const startScale = viewport.scale;
+      const startOffset = { ...viewport.offset };
+      const targetScale = Math.min(10, Math.max(6.5, startScale * extraZoom));
+
+      // Preselect this gene so it highlights during the flight
+      setLasso((prev) => ({ ...prev, selectedGenes: new Set([gene.geneId]) }));
+
+      const t0 = performance.now();
+      isFocusingRef.current = true;
+
+      const step = (now: number) => {
+        // Progress for each channel
+        const pZoom = Math.min(1, (now - t0) / durationZoom);
+        const pPan = Math.min(1, (now - t0) / durationPan);
+
+        // Easing: quick zoom, gentle pan
+        const ez = easeInOutCubic(pZoom);
+        const ep = easeInOutCubic(pPan);
+
+        // Interpolated scale
+        const s = startScale + (targetScale - startScale) * ez;
+
+        // Where the offset *would be* to perfectly center at this scale:
+        const targOffX = centerX - gene.x * s;
+        const targOffY = centerY - gene.y * s;
+
+        // Slowly move from the *current* offset to that moving target
+        const offX = startOffset.x + (targOffX - startOffset.x) * ep;
+        const offY = startOffset.y + (targOffY - startOffset.y) * ep;
+
+        setViewport((v) => ({
+          ...v,
+          scale: s,
+          offset: { x: offX, y: offY },
+          dragging: false,
+          lastMousePos: null,
+        }));
+
+        // Keep the details open and tracking
+        const rect = overlayCanvasRef.current?.getBoundingClientRect();
+        const sx = gene.x * s + offX;
+        const sy = gene.y * s + offY;
+        if (rect) {
+          setPopup({
+            visible: true,
+            point: gene,
+            position: { x: rect.left + sx, y: rect.top + sy },
+          });
+        } else {
+          setPopup({ visible: true, point: gene, position: { x: centerX, y: centerY } });
+        }
+
+        requestAnimationFrame(() => draw());
+
+        if ((pPan < 1 || pZoom < 1) && isFocusingRef.current) {
+          focusAnimRef.current = requestAnimationFrame(step);
+        } else {
+          isFocusingRef.current = false;
+          focusAnimRef.current = null;
+        }
+      };
+
+      focusAnimRef.current = requestAnimationFrame(step);
+    },
+    [viewport.scale, viewport.offset, overlayCanvasRef, draw, setViewport, setPopup, setLasso]
+  );
+
+
+
+  // --- Animation refs/helpers ---
+  const focusAnimRef = useRef<number | null>(null);
+  const isFocusingRef = useRef(false);
+
+  const easeInOutCubic = (t: number) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  const cancelFocusAnimation = () => {
+    if (focusAnimRef.current) cancelAnimationFrame(focusAnimRef.current);
+    focusAnimRef.current = null;
+    isFocusingRef.current = false;
+  };
+
+  // Jump by gene name (case-insensitive)
+  const jumpToGeneByName = useCallback(
+    (geneName: string) => {
+      if (!geneName) return;
+      const target = points.find(
+        (p) => p.geneName && p.geneName.toLowerCase() === geneName.toLowerCase()
+      );
+      if (!target) {
+        console.warn(`Gene not found: ${geneName}`);
+        return;
+      }
+      // Slower pan, quicker zoom
+      focusOnGenePoint(target, { durationPan: 2200, durationZoom: 900, extraZoom: 3.4 });
+    },
+    [points, focusOnGenePoint]
+  );
+
+
 
   const loadShader = (
     gl: WebGLRenderingContext,
@@ -792,7 +913,7 @@ export function GaussianMap({
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
       console.error(
         "An error occurred compiling the shaders: " +
-          gl.getShaderInfoLog(shader)
+        gl.getShaderInfoLog(shader)
       );
       gl.deleteShader(shader);
       return null;
@@ -837,9 +958,9 @@ export function GaussianMap({
   // In handleWheel function
   const handleWheel = useCallback(
     (e: WheelEvent) => {
+      cancelFocusAnimation();
       e.preventDefault();
       e.stopPropagation();
-      setPopup((prev) => ({ ...prev, visible: false }));
 
       const rect = overlayCanvasRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -893,6 +1014,7 @@ export function GaussianMap({
   }, [handleWheel]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    cancelFocusAnimation();
     const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
     if (lasso.active) {
       setIsDrawingLasso(true);
@@ -921,7 +1043,6 @@ export function GaussianMap({
           position: { x: e.clientX, y: e.clientY },
         });
       } else {
-        setPopup((prev) => ({ ...prev, visible: false }));
         setViewport((prev) => ({
           ...prev,
           dragging: true,
@@ -1028,7 +1149,6 @@ export function GaussianMap({
   // Apply the same fix to adjustZoom function
   const adjustZoom = useCallback(
     (delta: number) => {
-      setPopup((prev) => ({ ...prev, visible: false }));
       const centerX = CANVAS_WIDTH / 2;
       const centerY = CANVAS_HEIGHT / 2;
 
@@ -1277,21 +1397,21 @@ export function GaussianMap({
           />
         </div>
 
-        {popup.visible && popup.point && popup.position && (
+        {/* {popup.visible && popup.point && popup.position && (
           <div
-            // className="position-absolute rounded shadow p-3"
-            // style={{
-            //   left: Math.min(popup.position.x + 10, CANVAS_WIDTH - 256 - 10),
-            //   top: Math.min(popup.position.y + 10, CANVAS_HEIGHT - 200),
-            //   width: "16rem",
-            //   zIndex: 1000,
-            //   backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-            //   color: theme.colors?.geneTerrain?.textPrimary || "#333333",
-            //   border: `1px solid ${
-            //     theme.colors?.geneTerrain?.border || "#E2E8F0"
-            //   }`,
-            // }}
-          >
+          className="position-absolute rounded shadow p-3"
+          style={{
+            left: Math.min(popup.position.x + 10, CANVAS_WIDTH - 256 - 10),
+            top: Math.min(popup.position.y + 10, CANVAS_HEIGHT - 200),
+            width: "16rem",
+            zIndex: 1000,
+            backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
+            color: theme.colors?.geneTerrain?.textPrimary || "#333333",
+            border: `1px solid ${
+              theme.colors?.geneTerrain?.border || "#E2E8F0"
+            }`,
+          }}
+          > */}
             {/* <button
               onClick={() => setPopup((prev) => ({ ...prev, visible: false }))}
               className="btn-close btn-close-white position-absolute"
@@ -1362,15 +1482,19 @@ export function GaussianMap({
                 Remove Gene
               </button>
             </div> */}
-            {/* open details window on left     */}
-            <GeneDetailsPanel
-              selectedGene={popup.point}
-              data={points}
-              onJumpTo={(g) => console.log("jump to:", g)}
-              onClose={() => setPopup({ visible: false, point: null, position: null })}
-            />  
-          </div>
-        )}
+
+            {popup.visible && popup.point && popup.position && (
+              <div>
+                <GeneDetailsPanel
+                  selectedGene={popup.point}
+                  allPoints={points}
+                  onJumpTo={jumpToGeneByName}
+                  onClose={() => setPopup({ visible: false, point: null, position: null })}
+                />
+              </div>
+            )}
+          {/* </div>
+        )} */}
 
         <div className="position-absolute bottom-0 end-0 m-3 d-flex flex-column gap-2">
           {/* Layer control (Google Maps style) */}
@@ -1416,9 +1540,8 @@ export function GaussianMap({
                   key={layer.id}
                   className="border-bottom"
                   style={{
-                    borderColor: `${
-                      theme.colors?.geneTerrain?.neutral || "#d1d5db"
-                    }20`,
+                    borderColor: `${theme.colors?.geneTerrain?.neutral || "#d1d5db"
+                      }20`,
                   }}
                 >
                   <button
@@ -1431,9 +1554,8 @@ export function GaussianMap({
                     style={{
                       backgroundColor:
                         currentLayer === layer.id
-                          ? `${
-                              theme.colors?.geneTerrain?.primary || "#1E6B52"
-                            }20`
+                          ? `${theme.colors?.geneTerrain?.primary || "#1E6B52"
+                          }20`
                           : "transparent",
                       position: "relative",
                       color:
@@ -1456,9 +1578,8 @@ export function GaussianMap({
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
-                            border: `1px solid ${
-                              theme.colors?.geneTerrain?.border || "#E2E8F0"
-                            }`,
+                            border: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
+                              }`,
                             borderRadius: "4px",
                           }}
                         />
@@ -1512,9 +1633,8 @@ export function GaussianMap({
                 className="p-2 d-flex justify-content-end"
                 style={{
                   backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-                  borderTop: `1px solid ${
-                    theme.colors?.geneTerrain?.border || "#E2E8F0"
-                  }`,
+                  borderTop: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
+                    }`,
                 }}
               >
                 <Button
@@ -1567,9 +1687,8 @@ export function GaussianMap({
                     right: "0",
                     width: "300px",
                     backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-                    border: `1px solid ${
-                      theme.colors?.geneTerrain?.border || "#E2E8F0"
-                    }`,
+                    border: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
+                      }`,
                     overflow: "hidden",
                   }}
                 >
@@ -1743,9 +1862,8 @@ export function GaussianMap({
           {/* Existing lasso button */}
           <button
             onClick={toggleLasso}
-            className={`btn btn-lg rounded-circle shadow ${
-              lasso.active ? "btn-primary" : "btn-light"
-            }`}
+            className={`btn btn-lg rounded-circle shadow ${lasso.active ? "btn-primary" : "btn-light"
+              }`}
             title={
               lasso.active ? "Complete selection" : "Start lasso selection"
             }
@@ -1824,18 +1942,16 @@ export function GaussianMap({
           height: "400px",
           background: theme.colors?.geneTerrain?.bg || "#FFFFFF",
           zIndex: 1050,
-          borderTop: `1px solid ${
-            theme.colors?.geneTerrain?.border || "#E2E8F0"
-          }`,
+          borderTop: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
+            }`,
           boxShadow: "0 -4px 6px -1px rgba(0,0,0,0.1)",
         }}
       >
         <div
           className="d-flex align-items-center justify-content-between p-2"
           style={{
-            borderBottom: `1px solid ${
-              theme.colors?.geneTerrain?.border || "#E2E8F0"
-            }`,
+            borderBottom: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
+              }`,
             backgroundColor: theme.colors?.geneTerrain?.headerBg || "#1E6B52",
           }}
         >

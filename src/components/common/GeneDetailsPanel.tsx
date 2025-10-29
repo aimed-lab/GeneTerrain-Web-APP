@@ -85,7 +85,7 @@ const Divider = () => <div style={{ height: 1, background: DIVIDER_COLOR, margin
 
 // GeneArt
 const GeneArt = ({ gene }: { gene: string }) => (
-  <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #e0f2fe, #e9d5ff)" }} aria-label={`${gene} art`} />
+  <div style={{ width: "100%", height: "100%", background: "linear-gradient(#1cbc0038, #e0f2fe, #e9d5ff)" }} aria-label={`${gene} art`} />
 );
 
 // text row with icon and link
@@ -99,48 +99,144 @@ type TextLinkRowProps = {
 
 /* -------------------- TopSearch -------------------- */
 function TopSearch({
-  // selected,
-  // genes,
-  // recents = [],
-  // visitCounts = {},
-  // onSearch,
-  // onClear,
+  genes,
+  onSelect,
+  onClear,
+  recents: recentsProp = [],
 }: {
-  selected: string;
   genes: string[];
-  recents?: string[];
-  visitCounts?: Record<string, number>;
-  onSearch?: (gene: string) => void;
+  onSelect?: (gene: string) => void;   // called when a gene is chosen
   onClear?: () => void;
+  recents?: string[];
 }) {
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
+  const [active, setActive] = useState(0);
 
-  const LEFT_OFFSET = RAIL_LEFT + RAIL_W + 12;
-  const LIMIT = 12;
-  const RECENT_TOP_COUNT = 3;
+  // Search options
+  type Mode = "contains" | "startsWith" | "exact";
+  const [mode, setMode] = useState<Mode>("contains");
+  const [caseSensitive, setCaseSensitive] = useState(false);
+  const [limit, setLimit] = useState(12);
+  const [showOptions, setShowOptions] = useState(false);
 
-  const clearAll = () => {
-    setTerm("");
+  // Keep some local recents if none provided
+  const [recentsLocal, setRecentsLocal] = useState<string[]>([]);
+  const recents = recentsProp.length ? recentsProp : recentsLocal;
+
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  const normalize = useCallback(
+    (s: string) => (caseSensitive ? s : s.toLowerCase()),
+    [caseSensitive]
+  );
+
+  const matches = useCallback(
+    (g: string, q: string) => {
+      const G = normalize(g);
+      const Q = normalize(q);
+      if (!Q) return false;
+      if (mode === "exact") return G === Q;
+      if (mode === "startsWith") return G.startsWith(Q);
+      return G.includes(Q); // contains
+    },
+    [mode, normalize]
+  );
+
+  const suggestions = React.useMemo(() => {
+    const q = term.trim();
+    if (!q) return [];
+    const unique = Array.from(new Set(genes.filter(Boolean)));
+    const filtered = unique.filter((g) => matches(g, q));
+    return filtered.slice(0, limit);
+  }, [genes, term, matches, limit]);
+
+  const commit = (name: string) => {
+    // update local recents
+    setRecentsLocal((prev) => {
+      const next = [name, ...prev.filter((x) => x !== name)];
+      return next.slice(0, 8);
+    });
     setOpen(false);
-    // onClear && onClear();
+    setShowOptions(false);
+    setTerm(name);
+    onSelect?.(name);
   };
 
-  // Compute panel column + content rect
-  const columnLeft = RAIL_LEFT + RAIL_W + INFO_GAP;      // left edge of info panel
-  const contentLeft = columnLeft + PANEL_PAD;             // left edge of panel content
-  const contentWidth = INFO_W - 2 * PANEL_PAD;             // inner content width
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      setOpen(true);
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => Math.min(i + 1, Math.max(0, suggestions.length - 1)));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (open && suggestions[active]) {
+        commit(suggestions[active]);
+      } else if (term.trim()) {
+        // pick the best match given the mode
+        const exact = suggestions.find((g) => matches(g, term.trim()));
+        commit(exact ?? term.trim());
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setShowOptions(false);
+    }
+  };
+
+  // Click outside to close
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowOptions(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  // ---- position constants preserved (unchanged) ----
+  const columnLeft = RAIL_LEFT + RAIL_W + INFO_GAP;
+  const contentLeft = columnLeft + PANEL_PAD;
+  const contentWidth = INFO_W - 2 * PANEL_PAD;
+
+  // highlight helper
+  const Highlight = ({ text, query }: { text: string; query: string }) => {
+    if (!query) return <>{text}</>;
+    const G = caseSensitive ? text : text.toLowerCase();
+    const Q = caseSensitive ? query : query.toLowerCase();
+    const idx = mode === "exact" ? (G === Q ? 0 : -1)
+      : mode === "startsWith" ? G.indexOf(Q) === 0 ? 0 : -1
+        : G.indexOf(Q);
+    if (idx < 0) return <>{text}</>;
+    const before = text.slice(0, idx);
+    const mid = text.slice(idx, idx + query.length);
+    const after = text.slice(idx + query.length);
+    return (
+      <>
+        {before}
+        <mark style={{ background: "rgba(255, 238, 88, 0.6)", padding: 0 }}>{mid}</mark>
+        {after}
+      </>
+    );
+  };
+
   return (
-    // compute column anchor once
     <div
       ref={wrapRef}
       style={{
         position: "absolute",
         top: 60,
-        left: columnLeft + PANEL_PAD,    // align to panel content left
-        width: INFO_W - 2 * PANEL_PAD,   // same padding on right as left
-        zIndex: 70,                      // stays above info panel
+        left: contentLeft,
+        width: contentWidth,
+        zIndex: 70,
       }}
     >
       {/* Search bar */}
@@ -152,10 +248,11 @@ function TopSearch({
           background: "rgba(255,255,255,0.98)",
           border: "1px solid rgba(0,0,0,0.12)",
           borderRadius: 999,
-          padding: "14px 14px 14px 44px",
+          padding: "12px 90px 12px 44px",
           boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
         }}
       >
+        {/* icon */}
         <div
           style={{
             position: "absolute",
@@ -174,10 +271,14 @@ function TopSearch({
 
         <input
           value={term}
-          // onChange={handleChange}
-          // onKeyDown={handleKeyDown}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            setActive(0);
+            setOpen(true);
+          }}
+          onKeyDown={handleKeyDown}
           placeholder="Search genes…"
-          onFocus={() => setOpen(true)}
+          onFocus={() => setOpen(!!term || recents.length > 0)}
           style={{
             width: "100%",
             outline: "none",
@@ -189,15 +290,20 @@ function TopSearch({
           aria-label="Search genes"
         />
 
+        {/* Clear */}
         {term ? (
           <button
             type="button"
-            onClick={clearAll}
+            onClick={() => {
+              setTerm("");
+              setOpen(false);
+              onClear?.();
+            }}
             title="Clear"
             aria-label="Clear search"
             style={{
               position: "absolute",
-              right: 8,
+              right: 44,
               top: "50%",
               transform: "translateY(-50%)",
               height: 28,
@@ -216,11 +322,148 @@ function TopSearch({
             </svg>
           </button>
         ) : null}
+
+
       </div>
 
+      {/* Options popover */}
+      {showOptions && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            marginTop: 6,
+            width: 300,
+            background: "#fff",
+            border: "1px solid rgba(0,0,0,0.12)",
+            borderRadius: 12,
+            boxShadow: "0 16px 36px rgba(0,0,0,0.14)",
+            padding: 10,
+          }}
+        >
+          <div style={{ fontSize: 12, color: TEXT_SECONDARY, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 6, fontWeight: 600 }}>
+            Search options
+          </div>
+
+          <div style={{ display: "grid", rowGap: 8 }}>
+            <div>
+              <div style={{ fontSize: 12, marginBottom: 4 }}>Mode</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {(["contains", "startsWith", "exact"] as Mode[]).map((m) => (
+                  <label key={m} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid rgba(0,0,0,0.12)", borderRadius: 999, padding: "4px 10px", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="search-mode"
+                      value={m}
+                      checked={mode === m}
+                      onChange={() => setMode(m)}
+                    />
+                    <span style={{ fontSize: 13 }}>{m}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <input type="checkbox" checked={caseSensitive} onChange={(e) => setCaseSensitive(e.target.checked)} />
+              <span style={{ fontSize: 13 }}>Case sensitive</span>
+            </label>
+
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13 }}>Max results</span>
+                <span style={{ fontSize: 12, color: TEXT_SECONDARY }}>{limit}</span>
+              </div>
+              <input
+                type="range"
+                min={5}
+                max={50}
+                step={1}
+                value={limit}
+                onChange={(e) => setLimit(parseInt(e.target.value, 10))}
+                style={{ width: "100%" }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suggestions / Recents dropdown */}
+      {(open && (suggestions.length > 0 || (!term && recents.length > 0))) && (
+        <div
+          role="listbox"
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: 6,
+            background: "#fff",
+            border: "1px solid rgba(0,0,0,0.12)",
+            borderRadius: 12,
+            boxShadow: "0 16px 36px rgba(0,0,0,0.14)",
+            maxHeight: 300,
+            overflowY: "auto",
+          }}
+        >
+          {/* Recents */}
+          {!term && recents.length > 0 && (
+            <div style={{ padding: "8px 10px" }}>
+              <div style={{ fontSize: 11, color: TEXT_SECONDARY, textTransform: "uppercase", letterSpacing: 0.3, margin: "2px 0 6px 0", fontWeight: 600 }}>
+                Recent
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {recents.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); commit(r); }}
+                    style={{
+                      borderRadius: 999,
+                      border: "1px solid rgba(0,0,0,0.12)",
+                      background: "#fff",
+                      padding: "4px 10px",
+                      cursor: "pointer",
+                      fontSize: 12,
+                    }}
+                    title={`Search ${r}`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Suggestions */}
+          {suggestions.map((name, i) => {
+            const activeRow = i === active;
+            return (
+              <div
+                key={name + i}
+                role="option"
+                aria-selected={activeRow}
+                onMouseEnter={() => setActive(i)}
+                onMouseDown={(e) => { e.preventDefault(); commit(name); }}
+                style={{
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  background: activeRow ? HOVER_BG : "transparent",
+                  fontFamily: FONT_STACK,
+                  fontSize: 14,
+                }}
+              >
+                <Highlight text={name} query={term.trim()} />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
+
 
 const TextLinkRow: FC<TextLinkRowProps> = ({ href, icon, label, value, title }) => (
   <a
@@ -267,7 +510,7 @@ const TextLinkRow: FC<TextLinkRowProps> = ({ href, icon, label, value, title }) 
 /**  Component  */
 type GeneDetailsPanelProps = {
   selectedGene: Point | null;
-  data: { expression?: number; rpScore?: number;[key: string]: any };
+  allPoints: Point[];
   connected?: string[];
   onJumpTo?: (gene: string) => void;
   onClose?: () => void;
@@ -308,7 +551,7 @@ export function parseGeneInfo(data: any): GeneInfo {
   return geneInfo;
 }
 
-export default function GeneDetailsPanel({ selectedGene, data, connected = [], onJumpTo, onClose }: GeneDetailsPanelProps) {
+export default function GeneDetailsPanel({ selectedGene, allPoints, connected = [], onJumpTo, onClose }: GeneDetailsPanelProps) {
   const [tab, setTab] = useState("overview");
   const [hover, setHover] = useState(false);
   const [canLeft, setCanLeft] = useState(false);
@@ -504,7 +747,7 @@ export default function GeneDetailsPanel({ selectedGene, data, connected = [], o
     return () => { el.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onResize); };
   }, [updateArrows, contentWidth, connected?.length]);
 
-  if (!selectedGene || !data) return null;
+  if (!selectedGene) return null;
 
   // carousel sizing
   const GAP = 8;
@@ -627,7 +870,7 @@ export default function GeneDetailsPanel({ selectedGene, data, connected = [], o
           justifyContent: "space-between",
           cursor: dragRef.current.dragging ? "grabbing" : "grab",
           padding: "8px 10px",
-          background: "#1e6b52",
+          background: "rgb(30 107 55 / 62%) ",
           borderBottom: `1px solid ${DIVIDER_COLOR}`,
           userSelect: "none",
         }}
@@ -636,8 +879,14 @@ export default function GeneDetailsPanel({ selectedGene, data, connected = [], o
 
         </div>
 
-        <TopSearch selected={""} genes={[]}
+        {/* <TopSearch selected={""} genes={[]}
+        /> */}
+        <TopSearch
+          genes={Array.from(new Set(allPoints.map((p) => p.geneName).filter(Boolean)))}
+          onSelect={(geneName) => onJumpTo?.(geneName)}   // selects → focus/zoom via parent handler
+          onClear={() => {/* optional: clear actions */ }}
         />
+
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button

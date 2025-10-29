@@ -21,9 +21,9 @@ const GeneSelectionSummary: React.FC<GeneSelectionSummaryProps> = ({
   const avgValue =
     selectedPoints.length > 0
       ? (
-          selectedPoints.reduce((sum, p) => sum + p.value, 0) /
-          selectedPoints.length
-        ).toFixed(2)
+        selectedPoints.reduce((sum, p) => sum + p.value, 0) /
+        selectedPoints.length
+      ).toFixed(2)
       : "0.00";
 
   return (
@@ -317,126 +317,214 @@ const GeneSelectionSummary: React.FC<GeneSelectionSummaryProps> = ({
                     </div> */}
 
                     {/* ───────── Mini Bar Chart (below Genes/Pathways tabs) ───────── */}
-                  <div 
-                    className="tab-pane fade show active small"
+                    <div
+                      className="tab-pane fade show active small"
                       id={`genes-${idx}`}
                       role="tabpanel"
-                  >
-                    <div className=" mb-1" style={{ color: "#666666" }}>
-                      Gene values (bar chart)
-                    </div>
+                    >
+                      <div className=" mb-1" style={{ color: "#666666" }}>
+                        Gene values (bar chart)
+                      </div>
 
-                    {(() => {
-                      const items = genesInRegion.slice(0, 5);
-                      const MAX_ABS = 4; // ← fixed range: -3 to +3
-                      const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+                      {(() => {
+                        // Sort by absolute value (desc)
+                        const items = [...genesInRegion].sort(
+                          (a, b) => Math.abs((b.value ?? 0)) - Math.abs((a.value ?? 0))
+                        );
 
-                      if (!items.length) return null;
+                        const MAX_ABS = 4; // fixed domain [-4, +4]
+                        const clamp = (v: number) => Math.max(-MAX_ABS, Math.min(MAX_ABS, v));
+                        const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
-                      return (
-                        <div>
-                          {items.map((gene, i) => {
-                            const v = gene.value ?? 0;
-                            const ratio = clamp01(Math.abs(v) / MAX_ABS);
-                            const isPositive = v >= 0;
-                            const negWidthPct = isPositive ? 0 : Math.round(ratio * 100);
-                            const posWidthPct = isPositive ? Math.round(ratio * 100) : 0;
-                            const color = isPositive ? "#d13a3aff" : "#3182CE";
+                        if (!items.length) return null;
 
-                            return (
-                              <div
-                                key={i}
-                                className="d-flex align-items-center mb-1"
-                                style={{ gap: "6px" }}
-                              >
-                                {/* X-axis label: gene name */}
-                                <div
-                                  style={{
-                                    width: 120,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    color: "#333",
-                                  }}
-                                  title={gene.geneName}
-                                >
-                                  {gene.geneName}
-                                </div>
+                        // --- error bar stats (only if >1 gene) ---
+                        const vals = items.map(g => g.value ?? 0);
+                        const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+                        const variance =
+                          vals.length > 1
+                            ? vals.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / (vals.length - 1)
+                            : 0;
+                        const sd = Math.sqrt(variance);
+                        const showError = items.length > 1 && sd > 0;
 
-                                {/* Dual-direction bar (negative left, positive right) */}
-                                <div
-                                  style={{
-                                    flex: 1,
-                                    position: "relative",
-                                    display: "grid",
-                                    gridTemplateColumns: "1fr 1fr",
-                                    height: 12,
-                                    background: "#F1F5F9",
-                                    borderRadius: 4,
-                                    overflow: "hidden",
-                                  }}
-                                >
-                                  {/* center zero axis */}
-                                  <div
-                                    aria-hidden
-                                    style={{
-                                      position: "absolute",
-                                      left: "50%",
-                                      top: 0,
-                                      bottom: 0,
-                                      width: 1,
-                                      background: "#CBD5E1",
-                                    }}
-                                  />
+                        // map value in [-MAX_ABS, MAX_ABS] to [0..100]%
+                        const toPct = (v: number) => ((clamp(v) + MAX_ABS) / (2 * MAX_ABS)) * 100;
 
-                                  {/* LEFT half (negative values) */}
-                                  <div style={{ position: "relative" }}>
-                                    <div
-                                      style={{
-                                        position: "absolute",
-                                        right: 0,
-                                        top: 0,
-                                        bottom: 0,
-                                        width: `${negWidthPct}%`,
-                                        background: "#3182CE",
-                                        transition: "width 0.2s ease",
-                                      }}
-                                    />
-                                  </div>
-
-                                  {/* RIGHT half (positive values) */}
-                                  <div style={{ position: "relative" }}>
-                                    <div
-                                      style={{
-                                        position: "absolute",
-                                        left: 0,
-                                        top: 0,
-                                        bottom: 0,
-                                        width: `${posWidthPct}%`,
-                                        background: "#d13a3aff",
-                                        transition: "width 0.2s ease",
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Y-axis value */}
-                                <div
-                                  style={{
-                                    width: 60,
-                                    textAlign: "right",
-                                    color: color,
-                                  }}
-                                >
-                                  {v.toFixed(2)}
-                                </div>
+                        return (
+                          <div
+                            style={{
+                              maxHeight: 120,
+                              overflowY: "auto",
+                              paddingRight: 6,
+                            }}
+                          >
+                            {/* tiny legend */}
+                            {showError && (
+                              <div className="small mb-1" style={{ color: "#64748B" }}>
+                                Error bars: ±1 SD across genes in this selection
                               </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
+                            )}
+
+                            {items.map((gene, i) => {
+                              const v = gene.value ?? 0;
+                              const ratio = clamp01(Math.abs(v) / MAX_ABS);
+                              const isPositive = v >= 0;
+                              const negWidthPct = isPositive ? 0 : Math.round(ratio * 100);
+                              const posWidthPct = isPositive ? Math.round(ratio * 100) : 0;
+                              const color = isPositive ? "#d13a3aff" : "#3182CE";
+
+                              // error bar endpoints around this gene's value
+                              const lo = v - sd;
+                              const hi = v + sd;
+                              const pctStart = toPct(Math.min(lo, hi));
+                              const pctEnd = toPct(Math.max(lo, hi));
+                              const widthPct = Math.max(0, pctEnd - pctStart);
+
+                              return (
+                                <div
+                                  key={i}
+                                  className="d-flex align-items-center mb-1"
+                                  style={{ gap: "6px" }}
+                                >
+                                  {/* gene label */}
+                                  <div
+                                    style={{
+                                      width: 120,
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      color: "#333",
+                                    }}
+                                    title={gene.geneName}
+                                  >
+                                    {gene.geneName}
+                                  </div>
+
+                                  {/* bar container */}
+                                  <div
+                                    style={{
+                                      flex: 1,
+                                      position: "relative",
+                                      display: "grid",
+                                      gridTemplateColumns: "1fr 1fr",
+                                      height: 12,
+                                      background: "#F1F5F9",
+                                      borderRadius: 4,
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {/* center zero axis */}
+                                    <div
+                                      aria-hidden
+                                      style={{
+                                        position: "absolute",
+                                        left: "50%",
+                                        top: 0,
+                                        bottom: 0,
+                                        width: 1,
+                                        background: "#CBD5E1",
+                                        zIndex: 1,
+                                      }}
+                                    />
+
+                                    {/* LEFT half (negative) */}
+                                    <div style={{ position: "relative", zIndex: 1 }}>
+                                      <div
+                                        style={{
+                                          position: "absolute",
+                                          right: 0,
+                                          top: 0,
+                                          bottom: 0,
+                                          width: `${negWidthPct}%`,
+                                          background: "#3182CE",
+                                          transition: "width 0.2s ease",
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* RIGHT half (positive) */}
+                                    <div style={{ position: "relative", zIndex: 1 }}>
+                                      <div
+                                        style={{
+                                          position: "absolute",
+                                          left: 0,
+                                          top: 0,
+                                          bottom: 0,
+                                          width: `${posWidthPct}%`,
+                                          background: "#d13a3aff",
+                                          transition: "width 0.2s ease",
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* --- error bar overlay (±1 SD around gene value) --- */}
+                                    {showError && (
+                                      <>
+                                        {/* main horizontal span */}
+                                        <div
+                                          aria-hidden
+                                          style={{
+                                            position: "absolute",
+                                            left: `${pctStart}%`,
+                                            width: `${widthPct}%`,
+                                            top: 4,              // vertically center within 12px height
+                                            height: 4,
+                                            background: "rgba(15, 23, 42, 0.35)", // slate-900 @ ~35%
+                                            borderRadius: 2,
+                                            zIndex: 2,
+                                          }}
+                                        />
+                                        {/* whiskers */}
+                                        <div
+                                          aria-hidden
+                                          style={{
+                                            position: "absolute",
+                                            left: `${pctStart}%`,
+                                            top: 1,
+                                            bottom: 1,
+                                            width: 1,
+                                            background: "rgba(15, 23, 42, 0.55)",
+                                            zIndex: 2,
+                                          }}
+                                        />
+                                        <div
+                                          aria-hidden
+                                          style={{
+                                            position: "absolute",
+                                            left: `${pctEnd}%`,
+                                            transform: "translateX(-1px)",
+                                            top: 1,
+                                            bottom: 1,
+                                            width: 1,
+                                            background: "rgba(15, 23, 42, 0.55)",
+                                            zIndex: 2,
+                                          }}
+                                        />
+                                      </>
+                                    )}
+                                  </div>
+
+                                  {/* value label */}
+                                  <div
+                                    style={{
+                                      width: 60,
+                                      textAlign: "right",
+                                      color,
+                                    }}
+                                  >
+                                    {v.toFixed(2)}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+
+
+
+                    </div>
                     <div
                       className="tab-pane fade"
                       id={`pathways-${idx}`}
