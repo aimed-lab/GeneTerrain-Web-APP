@@ -601,6 +601,8 @@ export default function GeneDetailsPanel({ selectedGene, allPoints, connected = 
 
   const getGeneDetails = async () => {
     console.log("genedetails called");
+    // const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+    // const apiKey = "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";
     const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
     if (!apiKey) return;
     setIsLoading(true);

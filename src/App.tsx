@@ -29,6 +29,8 @@ import CustomGeneTerrain from "./pages/CustomGeneTerrain";
 import GBMAnalysis from "./pages/GBMAnalysis";
 import FeedbackModal from "./components/common/FeedbackModal";
 import { useAuth } from "./components/context/AuthContext";
+import UnifiedPathwayNetwork from "./components/common/UnifiedPathwayNetwork";
+import KnowledgeGraph from "./components/common/KnowledgeGraph";
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -77,6 +79,8 @@ const App: React.FC = () => {
             <Route path="/docs/faq" element={<FAQ />} />
             <Route path="/about" element={<AboutContent />} />
             <Route path="/contact" element={<ContactContent />} />
+            <Route path="/enrichment-analysis" element={<UnifiedPathwayNetwork />} />
+            <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
 
             {/* Protected routes - require authentication */}
             <Route

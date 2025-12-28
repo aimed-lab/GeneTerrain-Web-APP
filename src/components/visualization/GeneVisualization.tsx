@@ -7,6 +7,8 @@ import {
   HStack,
   Badge,
   Icon,
+  Button,
+  Collapse,
 } from "@chakra-ui/react";
 import { FaChartArea } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -15,6 +17,7 @@ import GaussianMap from "../../GaussianPlots/GaussianMap";
 import { fetchGeneExpressionData } from "../../modules/GeneExpressionDataFetcher/fetchGeneExpressionData";
 import { SampleSummaryComponent } from "../../modules/SampleSummaryModule";
 import theme from "../../theme";
+import GeneDataGrid from "../common/GeneDataGrid";
 
 const MotionBox = motion(Box);
 
@@ -37,6 +40,7 @@ const GeneVisualization: React.FC = () => {
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const [visualizedSample, setVisualizedSample] = useState<any | null>(null);
   const [visualizeTrigger, setVisualizeTrigger] = useState(0);
+  const [showTable, setShowTable] = useState(false);
 
   // Increment trigger when isMapVisible becomes true
   useEffect(() => {
@@ -159,6 +163,31 @@ const GeneVisualization: React.FC = () => {
           datasetName={selectedDataset?.name || "Unknown Dataset"}
           visualizeTrigger={visualizeTrigger}
         />
+            <Button
+              size="sm"
+              mt={2}
+              variant="outline"
+              colorScheme="teal"
+              onClick={() => setShowTable((s) => !s)}
+              backgroundColor={showTable ?  undefined: "#1E6B52"}
+              textColor={showTable ?  undefined: "white"}
+              _hover={
+                showTable
+                  ? { backgroundColor: "#ecf4f0ff" }
+                  : { backgroundColor: "#2c9b6cff" }
+              }
+            >
+              {showTable ? "Hide Tabular Data" : "Show Tabular Data"}
+            </Button>
+            {/*collapsible area renders GeneDataGrid */}
+            <Collapse in={showTable} animateOpacity>
+              <Box mt={3}>
+                <GeneDataGrid 
+                data={points}
+                datasetId={selectedDataset?.id || ""}
+                />
+              </Box>
+            </Collapse>
 
         <Box
           position="relative"
@@ -168,6 +197,7 @@ const GeneVisualization: React.FC = () => {
           height="auto"
           borderWidth="1px"
           borderColor="geneTerrain.border"
+          mt={4}
         >
           {isLoadingPoints ? (
             <Text p={4} color="geneTerrain.textPrimary">

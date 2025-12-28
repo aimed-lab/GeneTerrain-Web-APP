@@ -111,7 +111,7 @@ export function GaussianMap({
   datasets,
 }: GaussianMapProps) {
   console.log(points);
-  const theme = useTheme(); // <-- Add this line
+  const theme = useTheme();
 
   const glCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -1875,14 +1875,6 @@ export function GaussianMap({
           {lasso.regions.length > 0 && (
             <>
               <button
-                color="#4B5563"
-                onClick={() => setShowSelectionSummary(true)}
-                className="btn btn-lg rounded-circle shadow"
-                title="Show selection summary"
-              >
-                <span className="fw-bold">{selectedPoints.length}</span>
-              </button>
-              <button
                 onClick={clearSelection}
                 className="btn btn-lg rounded-circle shadow"
                 title="Clear all selections"
@@ -1975,6 +1967,7 @@ export function GaussianMap({
             selectedPoints={selectedPoints}
             regions={lasso.regions}
             filteredPoints={filteredPoints}
+            datasetId={datasetId}
           />
         </div>
       </div>
