@@ -464,6 +464,7 @@ interface CanvasProps {
 }
 
 
+
 // ─────────────────────────────────────────────────────────────
 // Network canvas using vis-network (like UnifiedPathwayNetwork)
 // ─────────────────────────────────────────────────────────────
@@ -491,7 +492,7 @@ const KnowledgeCanvas: React.FC<CanvasProps> = ({
   onSelect,
   searchTerm,
   visibleKinds,
-}) => {
+})  => {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const networkRef = useRef<Network | null>(null);
@@ -1236,7 +1237,18 @@ function DetailPanel({
 // Main component
 // ─────────────────────────────────────────────────────────────
 
-export default function KnowledgeGraph(): React.ReactElement {
+type KnowledgeGraphPayload = { genes: string[]; datasetId: string };
+
+export default function KnowledgeGraph(
+  {
+    embedded = false,
+    payload,
+  }: {
+    embedded?: boolean;
+    payload?: KnowledgeGraphPayload | null;
+  } = {}
+): React.ReactElement {
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes] = useState<GraphNode[]>([]);
@@ -1255,39 +1267,44 @@ export default function KnowledgeGraph(): React.ReactElement {
     let cancelled = false;
 
     async function init() {
-      try {
-        if (typeof window === 'undefined') return;
+  try {
+    if (typeof window === 'undefined') return;
+
+    const incoming =
+      payload ??
+      (() => {
         const raw = window.localStorage.getItem('KNOWLEDGE_GRAPH_DATA');
-        if (!raw) {
-          setError('No KNOWLEDGE_GRAPH_DATA found in localStorage.');
-          setLoading(false);
-          return;
-        }
+        return raw ? JSON.parse(raw) : null;
+      })();
 
-        const payload = JSON.parse(raw);
-        const genes: string[] = Array.isArray(payload?.genes)
-          ? payload.genes.filter((g: any) => typeof g === 'string')
-          : [];
-        const datasetId: string =
-          typeof payload?.datasetId === 'string'
-            ? payload.datasetId
-            : 'Unknown dataset';
+    if (!incoming) {
+      setError('No KNOWLEDGE_GRAPH_DATA found in localStorage.');
+      setLoading(false);
+      return;
+    }
 
-        if (!genes.length) {
-          setError('No genes provided in KNOWLEDGE_GRAPH_DATA.');
-          setLoading(false);
-          return;
-        }
+    const genes: string[] = Array.isArray(incoming?.genes)
+      ? incoming.genes.filter((g: any) => typeof g === 'string')
+      : [];
 
-        const result = await buildKnowledgeGraph(datasetId, genes);
-        if (cancelled) return;
+    const datasetId: string =
+      typeof incoming?.datasetId === 'string' ? incoming.datasetId : 'Unknown dataset';
 
-        setNodes(result.nodes);
-        setEdges(result.edges);
-        setDiseaseHit(result.diseaseHit ?? null);
-        setSelectedId(result.diseaseNode.id);
-        setLoading(false);
-      } catch (e: any) {
+    if (!genes.length) {
+      setError('No genes provided in KNOWLEDGE_GRAPH_DATA.');
+      setLoading(false);
+      return;
+    }
+
+    const result = await buildKnowledgeGraph(datasetId, genes);
+    if (cancelled) return;
+
+    setNodes(result.nodes);
+    setEdges(result.edges);
+    setDiseaseHit(result.diseaseHit ?? null);
+    setSelectedId(result.diseaseNode.id);
+    setLoading(false);
+  } catch (e: any) {
         if (cancelled) return;
         console.error(e);
         setError(e?.message || 'Failed to build knowledge graph.');
@@ -1299,7 +1316,7 @@ export default function KnowledgeGraph(): React.ReactElement {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [payload]);
 
   // const displayedNodes = useMemo(
   //   () => nodes.filter((n) => visibleKinds[n.kind]),
@@ -1342,13 +1359,14 @@ export default function KnowledgeGraph(): React.ReactElement {
 
   if (loading) {
     return (
-      <Box
-        h="100vh"
-        bg="#F3F4F6"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
+       <Box
+      h={embedded ? '100%' : '100vh'}
+      minH={embedded ? '100%' : '100vh'}
+      bg={embedded ? 'transparent' : '#F3F4F6'}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
         <HStack spacing={3}>
           <Spinner />
           <Text color="#4B5563">
@@ -1362,13 +1380,14 @@ export default function KnowledgeGraph(): React.ReactElement {
   if (error) {
     return (
       <Box
-        h="100vh"
-        bg="#F3F4F6"
-        p={6}
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
+      h={embedded ? '100%' : '100vh'}
+      minH={embedded ? '100%' : '100vh'}
+      bg={embedded ? 'transparent' : '#F3F4F6'}
+      p={embedded ? 0 : 6}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
         <Box
           bg="white"
           border="1px solid #E5E7EB"
@@ -1402,29 +1421,32 @@ export default function KnowledgeGraph(): React.ReactElement {
   
 
   return (
-  <Box
-    bg="#F9FAFB"
-    h="100vh"
-    minH="100vh"
-    display="flex"
-    flexDirection="column"
-    overflow="hidden"
-  >
+ <Box
+  bg={embedded ? 'transparent' : '#F9FAFB'}
+  h={embedded ? '100%' : '100vh'}
+  minH={embedded ? '100%' : '100vh'}
+  display="flex"
+  flexDirection="column"
+  overflow="hidden"
+>
+
 
       <Box
-        as="main"
-        flex="1"
-        h="100%"                     // 🔒 main fills page
-        overflow="hidden"
-        p={{ base: 3, md: 4 }}
-        minH={0}
-      >
-        <Grid
-          templateColumns={{ base: '1fr', xl: 'minmax(0, 1.8fr) 380px' }}
-          gap={4}
-          h="92%"                   // 🔒 grid fills main
-          minH={0}
-        >
+  as="main"
+  flex="1"
+  h="100%"
+  overflow="hidden"
+  p={embedded ? 0 : { base: 3, md: 4 }}
+  minH={0}
+>
+
+       <Grid
+  templateColumns={{ base: '1fr', xl: 'minmax(0, 1.8fr) 380px' }}
+  gap={4}
+  h="100%"
+  minH={0}
+>
+
           {/* Network viewport */}
           <Box minH={0} h="100%">
             {/* <KnowledgeCanvas

@@ -204,7 +204,16 @@ const LollipopHead: React.FC<any> = ({
 // ──────────────────────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────────────────────
-export default function UnifiedPathwayNetwork(): React.ReactElement {
+export default function UnifiedPathwayNetwork(
+  {
+    embedded = false,
+    onOpenKnowledgeGraph,
+  }: {
+    embedded?: boolean;
+    onOpenKnowledgeGraph?: (payload: { genes: string[]; datasetId: string }) => void;
+  } = {}
+): React.ReactElement {
+
   // Start with onboarding if no stored genes; user can paste genes and Generate
   const [isOnboarding, setIsOnboarding] = useState<boolean>(true);
   const [geneText, setGeneText] = useState<string>(''); // empty at start
@@ -552,15 +561,16 @@ const genesLegendMaxDiameter = useMemo(() => {
   />
 
   {/* ⬇️ Right column: sticky, capped height, keeps room for footer buttons */}
-  <Box
+    <Box
     display="flex"
     flexDirection="column"
-    position="sticky"
-    top={0}
-    maxH="calc(100vh - 200px)"  // ← cap height so footer is always visible
+    position={embedded ? "relative" : "sticky"}
+    top={embedded ? undefined : 0}
+    maxH={embedded ? "560px" : "calc(100vh - 200px)"}
     minH="560px"
-    overflow="hidden"            // ← prevent children from overflowing
+    overflow="hidden"
   >
+
     {/* Search Nodes panel — fills available space, but won’t exceed the cap */}
     <Box
       bg="white"
@@ -708,7 +718,7 @@ const genesLegendMaxDiameter = useMemo(() => {
         : [];
       setDatasetId(parsed?.datasetId);
       console.log('Bootstrapping stored genes from dataset:', datasetId);
-      localStorage.removeItem(ENRICHMENT_STORAGE_KEY);
+      // localStorage.removeItem(ENRICHMENT_STORAGE_KEY);
       bootstrappedRef.current = true;
 
       if (arr.length) {
@@ -744,8 +754,16 @@ const genesLegendMaxDiameter = useMemo(() => {
     };
 
     return (
-      <Box bg="#f7fafc" minH="100vh" p={4} display="flex" alignItems="center" justifyContent="center">
-        <Box
+  <Box
+    bg={embedded ? "transparent" : "#f7fafc"}
+    minH={embedded ? "100%" : "100vh"}
+    h={embedded ? "100%" : undefined}
+    p={embedded ? 0 : 4}
+    overflow={embedded ? "auto" : undefined}
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+  >        <Box
           bg="white"
           border="1px solid #e2e8f0"
           rounded="xl"
@@ -771,8 +789,13 @@ const genesLegendMaxDiameter = useMemo(() => {
   // Main UI (left panel + tabs) after onboarding
   // ──────────────────────────────────────────────────────────────
   return (
-    <Box bg="#f7fafc" minH="100vh" p={{ base: 3, md: 5 }}>
-      <Grid templateColumns={{ base: '1fr', lg: '320px 1fr' }} gap={4}>
+<Box
+    bg={embedded ? "transparent" : "#f7fafc"}
+    minH={embedded ? "100%" : "100vh"}
+    h={embedded ? "100%" : undefined}
+    p={embedded ? 0 : { base: 3, md: 5 }}
+    overflow={embedded ? "auto" : undefined}
+  >      <Grid templateColumns={{ base: '1fr', lg: '320px 1fr' }} gap={4}>
         {/* LEFT CONTROL PANEL */}
         <Box bg="white" border="1px solid #e2e8f0" rounded="xl" p={4} position="sticky" top={4} h="auto">
           <Heading size="sm" color="#334155" mb={3}>Controls</Heading>
@@ -1022,22 +1045,32 @@ const genesLegendMaxDiameter = useMemo(() => {
             e.currentTarget.style.opacity = '0';
           }}
         >
-          <button
-            onClick={(ev) => {
-              ev.stopPropagation();
-              openKnowledgeGraph(row);
-            }}
-            style={{
-              background: 'white',
-              border: '1px solid #cbd5e188',
-              padding: '2px 6px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '11px',
-            }}
-          >
-            View Knowledge Graph
-          </button>
+         <button
+  onClick={(ev) => {
+    ev.stopPropagation();
+
+    const payload = {
+      genes: row.overlapGenes || [],
+      datasetId: datasetId || "Unknown dataset",
+    };
+
+    try {
+      localStorage.setItem("KNOWLEDGE_GRAPH_DATA", JSON.stringify(payload));
+    } catch {}
+
+    // ✅ switch view inside SAME modal (your LassoRegionPanel expects this)
+    if (onOpenKnowledgeGraph) {
+      onOpenKnowledgeGraph(payload);
+      return;
+    }
+
+    // fallback: open standalone page
+    window.open("/knowledge-graph", "_blank", "noopener,noreferrer");
+  }}
+>
+  View Knowledge Graph
+</button>
+
         </div>
       );
     })}

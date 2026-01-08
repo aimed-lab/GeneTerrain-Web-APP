@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   ZoomIn,
   ZoomOut,
@@ -6,7 +12,6 @@ import {
   Lasso,
   Search,
   Layers,
-  Settings,
   Sliders,
 } from "lucide-react";
 import { Point, ViewportState, PopupState, LassoState, Dataset } from "./types";
@@ -15,8 +20,8 @@ import {
   vertexShader,
   fragmentShader,
   discreteFragmentShader,
-  waterFragmentShader, // Add this
-  skyFragmentShader, // Add this
+  waterFragmentShader,
+  skyFragmentShader,
 } from "../shaders/gaussian";
 import { VisualizationHistory } from "./VisualizationHistory";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -30,37 +35,27 @@ import discreteLayerImg from "../assets/layers/contour_view.png";
 import positiveLayerImg from "../assets/layers/peak_view.png";
 import negativeLayerImg from "../assets/layers/valley_view.png";
 
-// Add these imports at the top
+// Chakra theme
 import { useTheme } from "@chakra-ui/react";
-import { hexToRgbArray, getSpectralColorFromTheme } from "../utils/colorUtils"; // We'll create this utility next
+import {
+  hexToRgbArray,
+  getSpectralColorFromTheme,
+} from "../utils/colorUtils";
 import { ComparisonPopup } from "./ComparisonPopup";
 import GeneDetailsPanel from "../components/common/GeneDetailsPanel";
+import LassoRegionPanel from "./LassoRegionPanel";
 
-// Add this debounce utility at the top with other imports
-// const debounce = (func: Function, wait: number) => {
-//   let timeout: NodeJS.Timeout;
-//   return function executedFunction(...args: any[]) {
-//     const later = () => {
-//       clearTimeout(timeout);
-//       func(...args);
-//     };
-//     clearTimeout(timeout);
-//     timeout = setTimeout(later, wait);
-//   };
-// };
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 const POINT_RADIUS = 2;
-const LABEL_ZOOM_THRESHOLD = 2;
 
-// Add these constants at the top of your file with other constants
-const MIN_ZOOM_FOR_LABELS = 4; // Only show labels when zoomed in this much
+const MIN_ZOOM_FOR_LABELS = 4;
 const PERCENTILE_PER_ZOOM_LEVEL = {
-  low: 10, // Show top/bottom 2% of genes at low zoom (most extreme values)
-  medium: 25, // Show top/bottom 10% at medium zoom
-  high: 50, // Show top/bottom 25% at high zoom
-  veryhigh: 100, // Show top/bottom 50% at very high zoom
+  low: 10,
+  medium: 25,
+  high: 50,
+  veryhigh: 100,
 };
 const ZOOM_THRESHOLDS = {
   low: 1,
@@ -69,12 +64,10 @@ const ZOOM_THRESHOLDS = {
   veryhigh: 5,
 };
 
-// Update the getSpectralColor function to use theme colors
 function getSpectralColor(value: number, theme: any): string {
-  // Get theme colors or use fallbacks if not available
-  const expressionLow = theme.colors?.geneTerrain?.primary || "#1E6B52"; // Use primary green instead of blue
-  const expressionMed = theme.colors?.geneTerrain?.neutral || "#606060"; // Use neutral gray
-  const expressionHigh = theme.colors?.geneTerrain?.accent1 || "#80BC00"; // Use accent1 lime green
+  const expressionLow = theme.colors?.geneTerrain?.primary || "#1E6B52";
+  const expressionMed = theme.colors?.geneTerrain?.neutral || "#606060";
+  const expressionHigh = theme.colors?.geneTerrain?.accent1 || "#80BC00";
 
   return getSpectralColorFromTheme(
     value,
@@ -110,7 +103,6 @@ export function GaussianMap({
   sampleId,
   datasets,
 }: GaussianMapProps) {
-  console.log(points);
   const theme = useTheme();
 
   const glCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -118,92 +110,76 @@ export function GaussianMap({
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
   const prevSampleIdRef = useRef<string>(sampleId);
+  const [isRegionPanelOpen, setIsRegionPanelOpen] = useState(false);
+const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
 
-  console.log("points: ", points);
+
 
   const [viewport, setViewport] = useState<ViewportState>(defaultViewport);
+
   const [popup, setPopup] = useState<PopupState>({
     visible: false,
     point: null,
     position: null,
   });
-  // Modify the initial lasso state
+
   const [lasso, setLasso] = useState<LassoState>({
     active: false,
     regions: [],
     selectedGenes: new Set(),
     currentRegion: [],
   });
+
   const [isDrawingLasso, setIsDrawingLasso] = useState(false);
   const [showSelectionSummary, setShowSelectionSummary] = useState(false);
   const [pathwaySearch, setPathwaySearch] = useState("");
   const [availablePathways] = useState(() =>
     Array.from(new Set(points.flatMap((p) => p.pathways))).sort()
   );
-  const [comparisonSamples, setComparisonSamples] = useState<
-    ComparisonSample[]
-  >([]);
+
+  const [comparisonSamples, setComparisonSamples] = useState<ComparisonSample[]>(
+    []
+  );
   const [showComparisonPopup, setShowComparisonPopup] = useState(false);
 
-  // Add these new state variables at the top with other useState declarations
-  const [summaryPosition, setSummaryPosition] = useState({ x: 16, y: 16 });
-  const [isDraggingSummary, setIsDraggingSummary] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  // Summary panel toggle
+  const [showSummaryPanel, setShowSummaryPanel] = useState(false);
 
-  // Add this with your other state variables at the top of the GaussianMap component
+  // Layer type
   type LayerType = "gaussian" | "discrete" | "water" | "sky";
   const [currentLayer, setCurrentLayer] = useState<LayerType>("gaussian");
 
-  // Add state for selected gene
+  // Selected gene
   const [selectedGene, setSelectedGene] = useState<Point | null>(null);
 
-  // Add state for line thickness control
+  // Contour settings
   const [lineThickness, setLineThickness] = useState<number>(0.12);
   const [showThicknessControl, setShowThicknessControl] =
     useState<boolean>(false);
+  const [isolineSpacing, setIsolineSpacing] = useState(1.0);
 
-  // Add state for summary panel toggle
-  const [showSummaryPanel, setShowSummaryPanel] = useState(false);
+  // Excluded genes
+  const [excludedGeneIds, setExcludedGeneIds] = useState<Set<string>>(
+    new Set()
+  );
 
-  // Add a new state variable for isoline spacing
-  const [isolineSpacing, setIsolineSpacing] = useState(1.0); // Default value
-  const [showIsolineControl, setShowIsolineControl] = useState(false); // For toggle panel
+  // ✅ NEW: hovered lasso region + hover card position (canvas-local)
+  const [hoveredRegionIndex, setHoveredRegionIndex] = useState<number | null>(
+    null
+  );
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(
+    null
+  );
 
-  // Step 2: Add a simple layers configuration array to make the UI dynamic
-  // Update the availableLayers array to include image paths
-  const availableLayers = [
-    {
-      id: "gaussian",
-      name: "Terrain View",
-      icon: "bi-bullseye",
-      image: gaussianLayerImg,
-    },
-    {
-      id: "discrete",
-      name: "Contour View",
-      icon: "bi-grid-3x3",
-      image: discreteLayerImg,
-    },
-    {
-      id: "water",
-      name: "Peaks View",
-      icon: "bi-water",
-      image: positiveLayerImg,
-    },
-    {
-      id: "sky",
-      name: "Valley View",
-      icon: "bi-cloud-sun",
-      image: negativeLayerImg,
-    },
-  ];
+  const clamp = (v: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, v));
 
   useEffect(() => {
     if (prevSampleIdRef.current !== sampleId) {
       setViewport(defaultViewport);
       setLasso({
         active: false,
-        regions: [], // Use regions instead of points
+        regions: [],
         selectedGenes: new Set(),
         currentRegion: [],
       });
@@ -213,28 +189,23 @@ export function GaussianMap({
       setPopup({ visible: false, point: null, position: null });
       setComparisonSamples([]);
       setShowComparisonPopup(false);
+      setShowSummaryPanel(false);
+      setHoveredRegionIndex(null);
+      setHoverPos(null);
       prevSampleIdRef.current = sampleId;
     }
   }, [sampleId]);
 
-  // First, add a new state variable to track excluded points
-  const [excludedGeneIds, setExcludedGeneIds] = useState<Set<string>>(
-    new Set()
-  );
-
-  // Then modify your filteredPoints to exclude these points
+  // Filter points by excluded + pathways
   const filteredPoints = points.filter((point) => {
-    // First check if this point is excluded
-    if (excludedGeneIds.has(point.geneId)) {
-      return false;
-    }
+    if (excludedGeneIds.has(point.geneId)) return false;
 
-    // Then apply existing pathway filter
     if (!pathwaySearch) return true;
     const searchTerms = pathwaySearch
       .toLowerCase()
       .split(",")
       .map((term) => term.trim());
+
     return searchTerms.some((term) =>
       point.pathways.some((pathway) => pathway.toLowerCase().includes(term))
     );
@@ -244,39 +215,52 @@ export function GaussianMap({
     (p) => lasso.selectedGenes.size === 0 || lasso.selectedGenes.has(p.geneId)
   );
 
-  // Helper: Initialize WebGL for a given context.
-  const initWebGLForContext = useCallback(
-    (gl: WebGLRenderingContext): WebGLProgram => {
-      const vShader = gl.createShader(gl.VERTEX_SHADER)!;
-      gl.shaderSource(vShader, vertexShader);
-      gl.compileShader(vShader);
-      if (!gl.getShaderParameter(vShader, gl.COMPILE_STATUS)) {
-        console.error("Vertex shader error: ", gl.getShaderInfoLog(vShader));
-      }
-      const fShader = gl.createShader(gl.FRAGMENT_SHADER)!;
-      gl.shaderSource(fShader, fragmentShader);
-      gl.compileShader(fShader);
-      if (!gl.getShaderParameter(fShader, gl.COMPILE_STATUS)) {
-        console.error("Fragment shader error: ", gl.getShaderInfoLog(fShader));
-      }
-      const program = gl.createProgram()!;
-      gl.attachShader(program, vShader);
-      gl.attachShader(program, fShader);
-      gl.linkProgram(program);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error("Program linking error: ", gl.getProgramInfoLog(program));
-      }
-      const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
-      const buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-      const position = gl.getAttribLocation(program, "position");
-      gl.enableVertexAttribArray(position);
-      gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-      return program;
-    },
-    []
-  );
+  const selectedPathways = Array.from(
+    new Set(selectedPoints.flatMap((point) => point.pathways))
+  ).sort();
+
+  // ✅ NEW: Precompute per-region gene lists for hover/card actions (fast + stable)
+  const regionStats = useMemo(() => {
+    return lasso.regions.map((region) => {
+      const genes = filteredPoints.filter((p) => isPointInPolygon(p, region.points));
+      return { count: genes.length, geneIds: genes.map((g) => g.geneId) };
+    });
+  }, [lasso.regions, filteredPoints]);
+
+  // Helper: Initialize WebGL for a given context
+  const initWebGLForContext = useCallback((gl: WebGLRenderingContext) => {
+    const vShader = gl.createShader(gl.VERTEX_SHADER)!;
+    gl.shaderSource(vShader, vertexShader);
+    gl.compileShader(vShader);
+    if (!gl.getShaderParameter(vShader, gl.COMPILE_STATUS)) {
+      console.error("Vertex shader error: ", gl.getShaderInfoLog(vShader));
+    }
+
+    const fShader = gl.createShader(gl.FRAGMENT_SHADER)!;
+    gl.shaderSource(fShader, fragmentShader);
+    gl.compileShader(fShader);
+    if (!gl.getShaderParameter(fShader, gl.COMPILE_STATUS)) {
+      console.error("Fragment shader error: ", gl.getShaderInfoLog(fShader));
+    }
+
+    const program = gl.createProgram()!;
+    gl.attachShader(program, vShader);
+    gl.attachShader(program, fShader);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error("Program linking error: ", gl.getProgramInfoLog(program));
+    }
+
+    const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    const position = gl.getAttribLocation(program, "position");
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+
+    return program;
+  }, []);
 
   const initWebGL = useCallback(
     (canvas: HTMLCanvasElement) => {
@@ -292,7 +276,58 @@ export function GaussianMap({
     [initWebGLForContext]
   );
 
-  // Update your drawSample function to pass theme colors to the WebGL shader
+  const loadShader = (
+    gl: WebGLRenderingContext,
+    type: number,
+    source: string
+  ) => {
+    const shader = gl.createShader(type);
+    if (!shader) return null;
+
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error(
+        "An error occurred compiling the shaders: " +
+          gl.getShaderInfoLog(shader)
+      );
+      gl.deleteShader(shader);
+      return null;
+    }
+
+    return shader;
+  };
+
+  // Create shader programs dynamically
+  const initShaderProgram = (
+    gl: WebGLRenderingContext,
+    vsSource: string,
+    fsSource: string
+  ) => {
+    const v = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+    const f = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    if (!v || !f) return null;
+
+    const shaderProgram = gl.createProgram();
+    if (!shaderProgram) return null;
+
+    gl.attachShader(shaderProgram, v);
+    gl.attachShader(shaderProgram, f);
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+      console.error(
+        "Unable to initialize the shader program: " +
+          gl.getProgramInfoLog(shaderProgram)
+      );
+      return null;
+    }
+
+    return shaderProgram;
+  };
+
+  // Draw sample (WebGL)
   const drawSample = useCallback(
     (
       gl: WebGLRenderingContext,
@@ -301,25 +336,25 @@ export function GaussianMap({
       viewport: ViewportState
     ) => {
       gl.useProgram(program);
+      if (samplePoints.length === 0) {
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  return;
+}
 
-      // Existing code...
 
-      // Add theme colors for WebGL shaders
       const themeColors = {
         expressionLow: theme.colors?.geneTerrain?.primary || "#1E6B52",
         expressionMed: theme.colors?.geneTerrain?.neutral || "#606060",
         expressionHigh: theme.colors?.geneTerrain?.accent1 || "#80BC00",
         background: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-        panel: theme.colors?.geneTerrain?.sectionBg || "#FFFFFF",
       };
 
-      // Convert hex colors to RGB arrays for WebGL (normalized to 0-1)
       const expressionLowRgb = hexToRgbArray(themeColors.expressionLow);
       const expressionMedRgb = hexToRgbArray(themeColors.expressionMed);
       const expressionHighRgb = hexToRgbArray(themeColors.expressionHigh);
       const backgroundRgb = hexToRgbArray(themeColors.background);
 
-      // Add uniforms for the theme colors
       const expressionLowLoc = gl.getUniformLocation(
         program,
         "expressionLowColor"
@@ -334,64 +369,53 @@ export function GaussianMap({
       );
       const backgroundLoc = gl.getUniformLocation(program, "backgroundColor");
 
-      // Set the color uniforms if the locations exist
       if (expressionLowLoc) gl.uniform3fv(expressionLowLoc, expressionLowRgb);
       if (expressionMedLoc) gl.uniform3fv(expressionMedLoc, expressionMedRgb);
-      if (expressionHighLoc)
-        gl.uniform3fv(expressionHighLoc, expressionHighRgb);
+      if (expressionHighLoc) gl.uniform3fv(expressionHighLoc, expressionHighRgb);
       if (backgroundLoc) gl.uniform3fv(backgroundLoc, backgroundRgb);
 
-      // Rest of your existing code...
-
-      // Check for texture float extension support
       const ext =
         gl.getExtension("OES_texture_float") ||
         gl.getExtension("OES_texture_half_float");
 
-      // Create points texture
-      const pointsData = new Float32Array(samplePoints.length * 4); // RGBA format
+      const pointsData = new Float32Array(samplePoints.length * 4);
       for (let i = 0; i < samplePoints.length; i++) {
-        pointsData[i * 4] = samplePoints[i].x; // R channel - x coordinate
-        pointsData[i * 4 + 1] = samplePoints[i].y; // G channel - y coordinate
-        pointsData[i * 4 + 2] = 0; // B channel - unused
-        pointsData[i * 4 + 3] = 0; // A channel - unused
+        pointsData[i * 4] = samplePoints[i].x;
+        pointsData[i * 4 + 1] = samplePoints[i].y;
+        pointsData[i * 4 + 2] = 0;
+        pointsData[i * 4 + 3] = 0;
       }
 
-      // Create values texture
-      const valuesData = new Float32Array(samplePoints.length * 4); // RGBA format
+      const valuesData = new Float32Array(samplePoints.length * 4);
       for (let i = 0; i < samplePoints.length; i++) {
-        valuesData[i * 4] = samplePoints[i].value; // R channel - value
-        valuesData[i * 4 + 1] = 0; // G channel - unused
-        valuesData[i * 4 + 2] = 0; // B channel - unused
-        valuesData[i * 4 + 3] = 0; // A channel - unused
+        valuesData[i * 4] = samplePoints[i].value;
+        valuesData[i * 4 + 1] = 0;
+        valuesData[i * 4 + 2] = 0;
+        valuesData[i * 4 + 3] = 0;
       }
 
-      // Create and bind points texture
       const pointsTexture = gl.createTexture();
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, pointsTexture);
 
-      // Use RGBA with floating point if supported, otherwise fall back to UNSIGNED_BYTE
       const texType = ext ? gl.FLOAT : gl.UNSIGNED_BYTE;
-      const pointsTextureWidth = Math.min(1024, samplePoints.length); // Max 1024 width
+      const pointsTextureWidth = Math.min(1024, samplePoints.length);
 
       if (ext) {
         gl.texImage2D(
           gl.TEXTURE_2D,
-          0, // level
-          gl.RGBA, // internal format
-          pointsTextureWidth, // width
-          1, // height
-          0, // border
-          gl.RGBA, // format
-          texType, // type
-          pointsData // data
+          0,
+          gl.RGBA,
+          pointsTextureWidth,
+          1,
+          0,
+          gl.RGBA,
+          texType,
+          pointsData
         );
       } else {
-        // Convert to UNSIGNED_BYTE for fallback
         const uint8Points = new Uint8Array(samplePoints.length * 4);
         for (let i = 0; i < samplePoints.length; i++) {
-          // Normalize x and y to 0-255 range
           const x = samplePoints[i].x;
           const y = samplePoints[i].y;
           uint8Points[i * 4] = Math.min(
@@ -423,7 +447,6 @@ export function GaussianMap({
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-      // Create and bind values texture
       const valuesTexture = gl.createTexture();
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, valuesTexture);
@@ -441,10 +464,8 @@ export function GaussianMap({
           valuesData
         );
       } else {
-        // Convert to UNSIGNED_BYTE for fallback
         const uint8Values = new Uint8Array(samplePoints.length * 4);
         for (let i = 0; i < samplePoints.length; i++) {
-          // Normalize value to 0-255 range (from typically -3 to 3)
           const value = samplePoints[i].value;
           uint8Values[i * 4] = Math.min(
             255,
@@ -472,12 +493,11 @@ export function GaussianMap({
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-      // Set shader uniforms
       const pointsTexLoc = gl.getUniformLocation(program, "pointsTexture");
-      gl.uniform1i(pointsTexLoc, 0); // texture unit 0
+      gl.uniform1i(pointsTexLoc, 0);
 
       const valuesTexLoc = gl.getUniformLocation(program, "valuesTexture");
-      gl.uniform1i(valuesTexLoc, 1); // texture unit 1
+      gl.uniform1i(valuesTexLoc, 1);
 
       const pointCountLoc = gl.getUniformLocation(program, "pointCount");
       gl.uniform1i(pointCountLoc, samplePoints.length);
@@ -494,61 +514,23 @@ export function GaussianMap({
       const scaleLoc = gl.getUniformLocation(program, "scale");
       gl.uniform1f(scaleLoc, viewport.scale);
 
-      // Add line thickness uniform
       const lineThicknessLoc = gl.getUniformLocation(program, "lineThickness");
-      if (lineThicknessLoc) {
-        gl.uniform1f(lineThicknessLoc, lineThickness);
-      }
+      if (lineThicknessLoc) gl.uniform1f(lineThicknessLoc, lineThickness);
 
-      // Add the isolineSpacing uniform
-      const isolineSpacingLoc = gl.getUniformLocation(
-        program,
-        "isolineSpacing"
-      );
+      const isolineSpacingLoc = gl.getUniformLocation(program, "isolineSpacing");
       if (isolineSpacingLoc && currentLayer === "discrete") {
         gl.uniform1f(isolineSpacingLoc, isolineSpacing);
       }
 
-      // Draw full-screen quad
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      // Clean up
       gl.deleteTexture(pointsTexture);
       gl.deleteTexture(valuesTexture);
     },
-    [theme, lineThickness, isolineSpacing, currentLayer] // Add theme to the dependencies
+    [theme, lineThickness, isolineSpacing, currentLayer]
   );
 
-  // Add helper function for creating shader programs dynamically
-  const initShaderProgram = (
-    gl: WebGLRenderingContext,
-    vsSource: string,
-    fsSource: string
-  ) => {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-
-    if (!vertexShader || !fragmentShader) return null;
-
-    const shaderProgram = gl.createProgram();
-    if (!shaderProgram) return null;
-
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-      console.error(
-        "Unable to initialize the shader program: " +
-        gl.getProgramInfoLog(shaderProgram)
-      );
-      return null;
-    }
-
-    return shaderProgram;
-  };
-
-  // Update the draw function to use theme colors for lasso selections
+  // Draw (WebGL + overlay canvas)
   const draw = useCallback(() => {
     const gl = glRef.current;
     const overlayCanvas = overlayCanvasRef.current;
@@ -557,17 +539,17 @@ export function GaussianMap({
     const ctx = overlayCanvas.getContext("2d");
     if (!ctx) return;
 
-    // Determine which points to show based on lasso selection
-    const pointsToShow =
-      lasso.active || lasso.regions.length === 0
-        ? filteredPoints
-        : filteredPoints.filter((point) =>
-          lasso.regions.some((region) =>
-            isPointInPolygon(point, region.points)
-          )
-        );
+    // const pointsToShow =
+    //   lasso.active || lasso.regions.length === 0
+    //     ? filteredPoints
+    //     : filteredPoints.filter((point) =>
+    //         lasso.regions.some((region) => isPointInPolygon(point, region.points))
+    //       );
 
-    // Clear both canvases
+    const pointsToShow = filteredPoints;
+
+
+
     gl.viewport(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -575,7 +557,6 @@ export function GaussianMap({
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Select the appropriate shader based on the current layer
     let selectedShader;
     switch (currentLayer) {
       case "gaussian":
@@ -592,16 +573,13 @@ export function GaussianMap({
         break;
     }
 
-    // Initialize shader program with the selected shader
     const program = initShaderProgram(gl, vertexShader, selectedShader);
-
     if (program) {
-      // Draw using WebGL
       drawSample(gl, program, pointsToShow, viewport);
       gl.deleteProgram(program);
     }
 
-    // Draw lasso regions on the overlay canvas
+    // Draw lasso regions
     ctx.setTransform(
       viewport.scale,
       0,
@@ -611,43 +589,36 @@ export function GaussianMap({
       viewport.offset.y
     );
 
-    // Draw lasso regions
-    lasso.regions.forEach((region) => {
+    lasso.regions.forEach((region, idx) => {
+      const isHovered = idx === hoveredRegionIndex;
+
       ctx.beginPath();
       ctx.moveTo(region.points[0].x, region.points[0].y);
-      region.points.forEach((point) => {
-        ctx.lineTo(point.x, point.y);
-      });
+      region.points.forEach((p) => ctx.lineTo(p.x, p.y));
       ctx.closePath();
 
-      // Use theme color for stroke
       ctx.strokeStyle = `${theme.colors?.geneTerrain?.primary || "#1E6B52"}cc`;
-      ctx.lineWidth = 1 / viewport.scale;
+      ctx.lineWidth = (isHovered ? 2.5 : 1) / viewport.scale;
       ctx.stroke();
 
-      // Use theme color for fill with transparency
-      ctx.fillStyle = `${theme.colors?.geneTerrain?.primary || "#1E6B52"}20`;
+      ctx.fillStyle = `${theme.colors?.geneTerrain?.primary || "#1E6B52"}${
+        isHovered ? "35" : "20"
+      }`;
       ctx.fill();
     });
 
-    // Draw current lasso region if active
+    // Draw current lasso region
     if (lasso.currentRegion.length > 0) {
       ctx.beginPath();
       ctx.moveTo(lasso.currentRegion[0].x, lasso.currentRegion[0].y);
-      lasso.currentRegion.forEach((point) => {
-        ctx.lineTo(point.x, point.y);
-      });
-
-      // Use theme color for stroke
+      lasso.currentRegion.forEach((p) => ctx.lineTo(p.x, p.y));
       ctx.strokeStyle = `${theme.colors?.geneTerrain?.primary || "#1E6B52"}cc`;
       ctx.lineWidth = 1 / viewport.scale;
       ctx.stroke();
     }
 
-    // Add this at the end of the function to render gene labels
-    // Only show labels when zoomed in past the minimum threshold
+    // Labels (your existing logic)
     if (viewport.scale >= MIN_ZOOM_FOR_LABELS) {
-      // Determine the percentile threshold based on zoom level
       let percentileThreshold;
       if (viewport.scale >= ZOOM_THRESHOLDS.veryhigh) {
         percentileThreshold = PERCENTILE_PER_ZOOM_LEVEL.veryhigh;
@@ -659,22 +630,17 @@ export function GaussianMap({
         percentileThreshold = PERCENTILE_PER_ZOOM_LEVEL.low;
       }
 
-      // First, sort all points by absolute value
       const allPointsSorted = [...pointsToShow].sort(
         (a, b) => Math.abs(b.value) - Math.abs(a.value)
       );
 
-      // Calculate the cutoff index based on percentile
       const totalCount = allPointsSorted.length;
       const cutoffIndex = Math.max(
         1,
         Math.floor(totalCount * (percentileThreshold / 100))
       );
-
-      // Take only the points that fall within the percentile threshold
       const pointsToLabel = allPointsSorted.slice(0, cutoffIndex);
 
-      // Draw gene name labels
       ctx.setTransform(
         viewport.scale,
         0,
@@ -684,64 +650,36 @@ export function GaussianMap({
         viewport.offset.y
       );
 
-      // Adjust text size based on zoom level - increased base size from 12 to 14
-      const fontSize = Math.min(
-        16,
-        Math.max(12, 14 / Math.sqrt(viewport.scale))
-      );
+      const fontSize = Math.min(16, Math.max(12, 14 / Math.sqrt(viewport.scale)));
       ctx.font = `bold ${fontSize / viewport.scale}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      // Track used positions to avoid overlaps
-      const usedPositions = new Set();
+      const usedPositions = new Set<string>();
 
       pointsToLabel.forEach((point) => {
-        if (!point.geneName) return; // Skip if no gene name
+        if (!point.geneName) return;
 
-        // Create a position key for this point's location
-        // Divide the space into grid cells to check for overlaps
         const gridSize = 40 / viewport.scale;
         const posKey = `${Math.floor(point.x / gridSize)},${Math.floor(
           point.y / gridSize
         )}`;
 
-        // Skip this label if we already have one in this grid cell
         if (usedPositions.has(posKey)) return;
-
-        // Add this position to used positions
         usedPositions.add(posKey);
 
-        // Create background for text
         const textWidth = ctx.measureText(point.geneName).width;
         const padding = 4 / viewport.scale;
         const rectHeight = 14 / viewport.scale;
 
-        // Choose color based on point value
-        // if (point.value > 1) {
-        //   // Strong positive - red background
-        //   ctx.fillStyle = "rgba(220, 53, 69, 0.8)"; // Bootstrap danger
-        // } else if (point.value < -1) {
-        //   // Strong negative - blue background
-        //   ctx.fillStyle = "rgba(13, 110, 253, 0.8)"; // Bootstrap primary
-        // } else if (Math.abs(point.value) > 0.5) {
-        //   // Moderate values - grey background
-        //   ctx.fillStyle = "rgba(52, 58, 64, 0.8)"; // Bootstrap dark
-        // } else {
-        //   // Minimal values - light grey background
-        //   ctx.fillStyle = "rgba(108, 117, 125, 0.7)"; // Bootstrap secondary
-        // }
-
-        // No baackground color for text
         ctx.fillStyle = "rgba(97, 94, 94, 0)";
 
-
-        // Position the label above the point
         const labelY = point.y - (rectHeight + 5 / viewport.scale);
 
-        // Draw text background with rounded corners
         ctx.beginPath();
+        // @ts-ignore
         if (typeof ctx.roundRect === "function") {
+          // @ts-ignore
           ctx.roundRect(
             point.x - textWidth / 2 - padding,
             labelY - rectHeight / 2,
@@ -750,7 +688,6 @@ export function GaussianMap({
             3 / viewport.scale
           );
         } else {
-          // Fallback for browsers without roundRect
           ctx.rect(
             point.x - textWidth / 2 - padding,
             labelY - rectHeight / 2,
@@ -760,11 +697,8 @@ export function GaussianMap({
         }
         ctx.fill();
 
-        // Draw text
-        // ctx.fillStyle = "white";
-        // Text color black for better visibility on light backgrounds
-        ctx.font = `${fontSize / viewport.scale}px Arial`;           // default weight (normal)
-        ctx.fillStyle = "black"
+        ctx.font = `${fontSize / viewport.scale}px Arial`;
+        ctx.fillStyle = "black";
         ctx.fillText(point.geneName, point.x, labelY);
       });
     }
@@ -774,57 +708,59 @@ export function GaussianMap({
     lasso,
     currentLayer,
     drawSample,
-    initShaderProgram,
     theme,
-  ]); // Add theme to deps
+    initShaderProgram,
+    hoveredRegionIndex, // ✅
+  ]);
 
-  // Helper: convert world -> screen given a viewport
-  const worldToScreen = (wx: number, wy: number, vp: ViewportState) => ({
-    x: wx * vp.scale + vp.offset.x,
-    y: wy * vp.scale + vp.offset.y,
-  });
+  // --- Animation refs/helpers (your existing focus/jump logic) ---
+  const focusAnimRef = useRef<number | null>(null);
+  const isFocusingRef = useRef(false);
 
+  const easeInOutCubic = (t: number) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  const cancelFocusAnimation = () => {
+    if (focusAnimRef.current) cancelAnimationFrame(focusAnimRef.current);
+    focusAnimRef.current = null;
+    isFocusingRef.current = false;
+  };
 
   const focusOnGenePoint = useCallback(
-    (gene: Point, opts?: { durationPan?: number; durationZoom?: number; extraZoom?: number }) => {
+    (
+      gene: Point,
+      opts?: { durationPan?: number; durationZoom?: number; extraZoom?: number }
+    ) => {
       cancelFocusAnimation();
 
-      // Tunables
-      const durationPan = opts?.durationPan ?? 1800; // ms (slow)
-      const durationZoom = opts?.durationZoom ?? 900;  // ms (faster)
+      const durationPan = opts?.durationPan ?? 1800;
+      const durationZoom = opts?.durationZoom ?? 900;
       const extraZoom = opts?.extraZoom ?? 3.2;
 
       const centerX = CANVAS_WIDTH / 2;
       const centerY = CANVAS_HEIGHT / 2;
 
-      // Capture starting viewport once
       const startScale = viewport.scale;
       const startOffset = { ...viewport.offset };
       const targetScale = Math.min(10, Math.max(6.5, startScale * extraZoom));
 
-      // Preselect this gene so it highlights during the flight
       setLasso((prev) => ({ ...prev, selectedGenes: new Set([gene.geneId]) }));
 
       const t0 = performance.now();
       isFocusingRef.current = true;
 
       const step = (now: number) => {
-        // Progress for each channel
         const pZoom = Math.min(1, (now - t0) / durationZoom);
         const pPan = Math.min(1, (now - t0) / durationPan);
 
-        // Easing: quick zoom, gentle pan
         const ez = easeInOutCubic(pZoom);
         const ep = easeInOutCubic(pPan);
 
-        // Interpolated scale
         const s = startScale + (targetScale - startScale) * ez;
 
-        // Where the offset *would be* to perfectly center at this scale:
         const targOffX = centerX - gene.x * s;
         const targOffY = centerY - gene.y * s;
 
-        // Slowly move from the *current* offset to that moving target
         const offX = startOffset.x + (targOffX - startOffset.x) * ep;
         const offY = startOffset.y + (targOffY - startOffset.y) * ep;
 
@@ -836,7 +772,6 @@ export function GaussianMap({
           lastMousePos: null,
         }));
 
-        // Keep the details open and tracking
         const rect = overlayCanvasRef.current?.getBoundingClientRect();
         const sx = gene.x * s + offX;
         const sy = gene.y * s + offY;
@@ -847,7 +782,11 @@ export function GaussianMap({
             position: { x: rect.left + sx, y: rect.top + sy },
           });
         } else {
-          setPopup({ visible: true, point: gene, position: { x: centerX, y: centerY } });
+          setPopup({
+            visible: true,
+            point: gene,
+            position: { x: centerX, y: centerY },
+          });
         }
 
         requestAnimationFrame(() => draw());
@@ -862,25 +801,9 @@ export function GaussianMap({
 
       focusAnimRef.current = requestAnimationFrame(step);
     },
-    [viewport.scale, viewport.offset, overlayCanvasRef, draw, setViewport, setPopup, setLasso]
+    [viewport.scale, viewport.offset, draw]
   );
 
-
-
-  // --- Animation refs/helpers ---
-  const focusAnimRef = useRef<number | null>(null);
-  const isFocusingRef = useRef(false);
-
-  const easeInOutCubic = (t: number) =>
-    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-  const cancelFocusAnimation = () => {
-    if (focusAnimRef.current) cancelAnimationFrame(focusAnimRef.current);
-    focusAnimRef.current = null;
-    isFocusingRef.current = false;
-  };
-
-  // Jump by gene name (case-insensitive)
   const jumpToGeneByName = useCallback(
     (geneName: string) => {
       if (!geneName) return;
@@ -891,36 +814,10 @@ export function GaussianMap({
         console.warn(`Gene not found: ${geneName}`);
         return;
       }
-      // Slower pan, quicker zoom
       focusOnGenePoint(target, { durationPan: 2200, durationZoom: 900, extraZoom: 3.4 });
     },
     [points, focusOnGenePoint]
   );
-
-
-
-  const loadShader = (
-    gl: WebGLRenderingContext,
-    type: number,
-    source: string
-  ) => {
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error(
-        "An error occurred compiling the shaders: " +
-        gl.getShaderInfoLog(shader)
-      );
-      gl.deleteShader(shader);
-      return null;
-    }
-
-    return shader;
-  };
 
   useEffect(() => {
     const canvas = glCanvasRef.current;
@@ -931,12 +828,10 @@ export function GaussianMap({
     draw();
   }, [draw]);
 
-  // Add a separate useEffect to handle lasso state changes
   useEffect(() => {
     requestAnimationFrame(() => draw());
   }, [lasso.active, lasso.regions, draw]);
 
-  // Add useEffect to redraw when layer type changes
   useEffect(() => {
     draw();
   }, [currentLayer, draw]);
@@ -953,9 +848,30 @@ export function GaussianMap({
     };
   };
 
-  // Update the handleWheel function to redraw both heatmap and contours immediately
-  // Fix for unused 'ctx' variables
-  // In handleWheel function
+  // ✅ NEW: find hovered region index (topmost = last drawn)
+  const getHoveredRegionIndex = useCallback(
+    (worldX: number, worldY: number) => {
+      if (lasso.regions.length === 0) return null;
+
+      const probe: Point = {
+        x: worldX,
+        y: worldY,
+        geneId: "",
+        geneName: "",
+        pathways: [],
+        description: "",
+        value: 0,
+      };
+
+      for (let i = lasso.regions.length - 1; i >= 0; i--) {
+        if (isPointInPolygon(probe, lasso.regions[i].points)) return i;
+      }
+      return null;
+    },
+    [lasso.regions]
+  );
+
+  // Wheel zoom (your existing logic)
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       cancelFocusAnimation();
@@ -982,16 +898,10 @@ export function GaussianMap({
           },
         };
 
-        // Immediate redraw of both heatmap and contours
         requestAnimationFrame(() => {
           const gl = glRef.current;
           const program = programRef.current;
-
-          // Remove or comment out the unused ctx variable
-          // const ctx = overlayCanvasRef.current?.getContext("2d");
-
           if (gl && program) {
-            // Draw heatmap
             gl.viewport(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1005,6 +915,52 @@ export function GaussianMap({
     [drawSample, filteredPoints]
   );
 
+    useEffect(() => {
+    if (prevSampleIdRef.current !== sampleId) {
+      // Calculate center of points to center the view
+      if (points.length > 0) {
+        const minX = Math.min(...points.map(p => p.x));
+        const maxX = Math.max(...points.map(p => p.x));
+        const minY = Math.min(...points.map(p => p.y));
+        const maxY = Math.max(...points.map(p => p.y));
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // Get canvas dimensions
+        const canvas = overlayCanvasRef.current;
+        const canvasWidth = canvas?.width || 800;
+        const canvasHeight = canvas?.height || 600;
+
+        // Set viewport centered on data
+        const scale = 2; // Default zoomed in
+        setViewport({
+          scale,
+          offset: {
+            x: canvasWidth / 2 - centerX * scale,
+            y: canvasHeight / 2 - centerY * scale,
+          },
+          dragging: false,
+          lastMousePos: null,
+        });
+      } else {
+        setViewport(defaultViewport);
+      }
+      setLasso({
+        active: false,
+        regions: [], // Use regions instead of points
+        selectedGenes: new Set(),
+        currentRegion: [],
+      });
+      setIsDrawingLasso(false);
+      setShowSelectionSummary(false);
+      setPathwaySearch("");
+      setPopup({ visible: false, point: null, position: null });
+      setComparisonSamples([]);
+      setShowComparisonPopup(false);
+      prevSampleIdRef.current = sampleId;
+    }
+  }, [sampleId, points]);
+
   useEffect(() => {
     const canvas = overlayCanvasRef.current;
     if (canvas) {
@@ -1013,56 +969,112 @@ export function GaussianMap({
     }
   }, [handleWheel]);
 
+    // Center viewport on initial load
+  const viewportInitializedRef = useRef(false);
+  useEffect(() => {
+    if (!viewportInitializedRef.current && points.length > 0 && overlayCanvasRef.current) {
+      const minX = Math.min(...points.map(p => p.x));
+      const maxX = Math.max(...points.map(p => p.x));
+      const minY = Math.min(...points.map(p => p.y));
+      const maxY = Math.max(...points.map(p => p.y));
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      const canvas = overlayCanvasRef.current;
+      const canvasWidth = canvas.width || 800;
+      const canvasHeight = canvas.height || 600;
+
+      const scale = 4;
+      setViewport({
+        scale,
+        offset: {
+          x: canvasWidth / 2 - centerX * scale,
+          y: canvasHeight / 2 - centerY * scale,
+        },
+        dragging: false,
+        lastMousePos: null,
+      });
+      viewportInitializedRef.current = true;
+    }
+  }, [points]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
-    cancelFocusAnimation();
-    const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
-    if (lasso.active) {
-      setIsDrawingLasso(true);
-      setLasso((prev) => ({
-        ...prev,
-        currentRegion: [
-          {
-            x: worldX,
-            y: worldY,
-            geneId: "",
-            geneName: "",
-            pathways: [],
-            description: "",
-            value: 0,
-          },
-        ],
-      }));
-    } else {
-      const clickedPoint = filteredPoints.find((point) =>
-        isPointInCircle(worldX, worldY, point.x, point.y, POINT_RADIUS * 2)
-      );
-      if (clickedPoint) {
-        setPopup({
-          visible: true,
-          point: clickedPoint,
-          position: { x: e.clientX, y: e.clientY },
-        });
-      } else {
-        setViewport((prev) => ({
-          ...prev,
-          dragging: true,
-          lastMousePos: {
-            x: e.clientX,
-            y: e.clientY,
-          },
-        }));
+  cancelFocusAnimation();
+
+  const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
+
+  // =========================
+  // LASSO MODE (active)
+  // =========================
+  if (lasso.active) {
+    // If user clicks inside an existing region -> open the left panel
+    // (Do NOT start drawing a new region)
+    if (lasso.regions.length > 0 && !isDrawingLasso) {
+      const hitIdx = getHoveredRegionIndex(worldX, worldY);
+      if (hitIdx !== null) {
+        setActiveRegionIndex(hitIdx);
+        setIsRegionPanelOpen(true);
+
+        // Optional: focus selection on this region only
+        const ids = regionStats[hitIdx]?.geneIds ?? [];
+        setLasso((prev) => ({ ...prev, selectedGenes: new Set(ids) }));
+
+        return;
       }
     }
-  };
+
+    // Otherwise, start drawing a new lasso region
+    setIsDrawingLasso(true);
+    setLasso((prev) => ({
+      ...prev,
+      currentRegion: [
+        {
+          x: worldX,
+          y: worldY,
+          geneId: "",
+          geneName: "",
+          pathways: [],
+          description: "",
+          value: 0,
+        },
+      ],
+    }));
+    return;
+  }
+
+  // =========================
+  // NORMAL MODE (lasso inactive)
+  // =========================
+  const clickedPoint = filteredPoints.find((point) =>
+    isPointInCircle(worldX, worldY, point.x, point.y, POINT_RADIUS * 2)
+  );
+
+  // If user clicked a gene point -> open gene popup
+  if (clickedPoint) {
+    setPopup({
+      visible: true,
+      point: clickedPoint,
+      position: { x: e.clientX, y: e.clientY },
+    });
+    return;
+  }
+
+  // Otherwise -> start dragging the viewport
+  setViewport((prev) => ({
+    ...prev,
+    dragging: true,
+    lastMousePos: { x: e.clientX, y: e.clientY },
+  }));
+};
+
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDrawingLasso) {
       const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
 
-      // Only add new point if it's far enough from the last point
       setLasso((prev) => {
         const lastPoint = prev.currentRegion[prev.currentRegion.length - 1];
-        const minDistance = 10 / viewport.scale; // Minimum distance between points
+        const minDistance = 10 / viewport.scale;
 
         const distance = lastPoint
           ? Math.hypot(worldX - lastPoint.x, worldY - lastPoint.y)
@@ -1092,38 +1104,50 @@ export function GaussianMap({
       const dy = e.clientY - viewport.lastMousePos.y;
       setViewport((prev) => ({
         ...prev,
-        offset: {
-          x: prev.offset.x + dx,
-          y: prev.offset.y + dy,
-        },
+        offset: { x: prev.offset.x + dx, y: prev.offset.y + dy },
         lastMousePos: { x: e.clientX, y: e.clientY },
       }));
-    }
+    } else {
+  // ✅ Allow hover tooltip even when lasso is active
+  // ❌ But do NOT update hover while actively drawing a new region
+  if (isDrawingLasso || lasso.regions.length === 0) {
+    if (hoveredRegionIndex !== null) setHoveredRegionIndex(null);
+    if (hoverPos !== null) setHoverPos(null);
+    return;
+  }
+
+  const rect = overlayCanvasRef.current?.getBoundingClientRect();
+  if (!rect) return;
+
+  const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
+  const idx = getHoveredRegionIndex(worldX, worldY);
+
+  if (idx !== hoveredRegionIndex) setHoveredRegionIndex(idx);
+
+  if (idx !== null) {
+    setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  } else {
+    if (hoverPos !== null) setHoverPos(null);
+  }
+}
+
   };
 
   const handleMouseUp = () => {
     if (isDrawingLasso) {
       setIsDrawingLasso(false);
       setLasso((prev) => {
-        // Generate next label (A, B, C, etc.)
         const nextLabel = String.fromCharCode(65 + prev.regions.length);
-
-        // Create new region with label
         const newRegion = {
           points: prev.currentRegion,
           label: `Selection ${nextLabel}`,
         };
-
-        // Add new region to regions array
         const newRegions = [...prev.regions, newRegion];
 
-        // Get points that are in any of the regions
         const selectedGenes = new Set(
           filteredPoints
             .filter((point) =>
-              newRegions.some((region) =>
-                isPointInPolygon(point, region.points)
-              )
+              newRegions.some((region) => isPointInPolygon(point, region.points))
             )
             .map((point) => point.geneId)
         );
@@ -1145,8 +1169,6 @@ export function GaussianMap({
     }));
   };
 
-  // Update the adjustZoom function similarly
-  // Apply the same fix to adjustZoom function
   const adjustZoom = useCallback(
     (delta: number) => {
       const centerX = CANVAS_WIDTH / 2;
@@ -1165,16 +1187,10 @@ export function GaussianMap({
           },
         };
 
-        // Immediate redraw of both heatmap and contours
         requestAnimationFrame(() => {
           const gl = glRef.current;
           const program = programRef.current;
-
-          // Remove or comment out the unused ctx variable
-          // const ctx = overlayCanvasRef.current?.getContext("2d");
-
           if (gl && program) {
-            // Draw heatmap
             gl.viewport(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1188,9 +1204,7 @@ export function GaussianMap({
     [drawSample, filteredPoints]
   );
 
-  // 6. Update clearSelection
   const clearSelection = () => {
-    // Reset everything when clicking the X button
     setLasso({
       active: false,
       regions: [],
@@ -1199,10 +1213,11 @@ export function GaussianMap({
     });
     setIsDrawingLasso(false);
     setShowSelectionSummary(false);
+    setHoveredRegionIndex(null);
+    setHoverPos(null);
     requestAnimationFrame(() => draw());
   };
 
-  // Update the toggleLasso function
   const toggleLasso = () => {
     setLasso((prev) => ({
       ...prev,
@@ -1211,16 +1226,11 @@ export function GaussianMap({
     }));
     setIsDrawingLasso(false);
     setShowSelectionSummary(false);
+    setHoveredRegionIndex(null);
+    setHoverPos(null);
   };
 
-  const selectedPathways = Array.from(
-    new Set(selectedPoints.flatMap((point) => point.pathways))
-  ).sort();
-
-  const handleLoadState = (
-    newViewport: ViewportState,
-    selectedGenes: Set<string>
-  ) => {
+  const handleLoadState = (newViewport: ViewportState, selectedGenes: Set<string>) => {
     setViewport((prev) => ({
       ...prev,
       scale: newViewport.scale,
@@ -1229,75 +1239,33 @@ export function GaussianMap({
     setLasso((prev) => ({ ...prev, selectedGenes }));
   };
 
-  // Update the handleCompare function if needed
   const handleCompare = (samples: ComparisonSample[]) => {
-    console.log("Comparison samples received:", samples); // Debug line
     setComparisonSamples(samples);
     setShowComparisonPopup(samples.length > 0);
   };
 
-  // Add these new handlers before the return statement
-  const handleSummaryMouseDown = (e: React.MouseEvent) => {
-    if (e.target instanceof Element && e.target.closest(".btn-close")) {
-      return; // Don't start drag if clicking close button
-    }
-    setIsDraggingSummary(true);
-    setDragOffset({
-      x: e.clientX - summaryPosition.x,
-      y: e.clientY - summaryPosition.y,
-    });
-  };
-
-  const handleSummaryMouseMove = (e: React.MouseEvent) => {
-    if (isDraggingSummary) {
-      setSummaryPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y,
-      });
-    }
-  };
-
-  const handleSummaryMouseUp = () => {
-    setIsDraggingSummary(false);
-  };
-
-  // In your canvas click handler
-  const handleCanvasClick = (x: number, y: number) => {
-    // Find if a gene is clicked
-    const clickedGene = points.find((point) =>
-      isPointInCircle(x, y, point.x, point.y, 10)
-    );
-
-    if (clickedGene) {
-      setSelectedGene(clickedGene);
-    }
-  };
-
-  // Add a function to exclude a gene
   const excludeGene = (geneId: string) => {
     setExcludedGeneIds((prev) => {
       const newSet = new Set(prev);
       newSet.add(geneId);
       return newSet;
     });
-
-    // Close the popup after excluding
     setPopup((prev) => ({ ...prev, visible: false }));
-
-    // Redraw the visualization
     requestAnimationFrame(() => draw());
   };
 
+  // Layer UI config
+  const availableLayers = [
+    { id: "gaussian", name: "Terrain View", icon: "bi-bullseye", image: gaussianLayerImg },
+    { id: "discrete", name: "Contour View", icon: "bi-grid-3x3", image: discreteLayerImg },
+    { id: "water", name: "Peaks View", icon: "bi-water", image: positiveLayerImg },
+    { id: "sky", name: "Valley View", icon: "bi-cloud-sun", image: negativeLayerImg },
+  ];
+
   return (
     <div className="d-flex flex-column align-items-center p-4">
-      {/* Apply theme colors to the gene pathway search section */}
-      <div
-        className="w-100"
-        style={{
-          maxWidth: "32rem",
-          marginBottom: "1rem",
-        }}
-      >
+      {/* Pathway Search */}
+      <div className="w-100" style={{ maxWidth: "32rem", marginBottom: "1rem" }}>
         <div className="position-relative">
           <input
             type="text"
@@ -1323,7 +1291,6 @@ export function GaussianMap({
           />
         </div>
 
-        {/* Update pathway buttons */}
         <div className="mt-2 d-flex flex-wrap gap-2">
           {availablePathways.map((pathway) => (
             <button
@@ -1383,8 +1350,14 @@ export function GaussianMap({
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseLeave={() => {
+            handleMouseUp();
+            setHoveredRegionIndex(null);
+            setHoverPos(null);
+          }}
         />
+
+        {/* History UI */}
         <div className="position-absolute top-0 start-0 m-3">
           <VisualizationHistory
             datasetId={datasetId}
@@ -1397,108 +1370,47 @@ export function GaussianMap({
           />
         </div>
 
-        {/* {popup.visible && popup.point && popup.position && (
-          <div
-          className="position-absolute rounded shadow p-3"
-          style={{
-            left: Math.min(popup.position.x + 10, CANVAS_WIDTH - 256 - 10),
-            top: Math.min(popup.position.y + 10, CANVAS_HEIGHT - 200),
-            width: "16rem",
-            zIndex: 1000,
-            backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-            color: theme.colors?.geneTerrain?.textPrimary || "#333333",
-            border: `1px solid ${
-              theme.colors?.geneTerrain?.border || "#E2E8F0"
-            }`,
-          }}
-          > */}
-            {/* <button
-              onClick={() => setPopup((prev) => ({ ...prev, visible: false }))}
-              className="btn-close btn-close-white position-absolute"
-              style={{ top: "8px", right: "8px" }}
+        {/* ✅ NEW: Hover Card (clickable + shows only when hovering a region) */}
+{hoveredRegionIndex !== null && hoverPos && !isDrawingLasso && (
+  <div
+    style={{
+      position: "absolute",
+      left: `${clamp(hoverPos.x + 12, 8, CANVAS_WIDTH - 120)}px`,
+      top: `${clamp(hoverPos.y + 12, 8, CANVAS_HEIGHT - 36)}px`,
+      zIndex: 2000,
+      pointerEvents: "none",
+      background: "rgba(0,0,0,0.78)",
+      color: "#fff",
+      padding: "6px 8px",
+      borderRadius: 8,
+      fontSize: 12,
+      fontWeight: 600,
+      boxShadow: "0 10px 26px rgba(0,0,0,0.18)",
+      whiteSpace: "nowrap",
+    }}
+  >
+    {(regionStats[hoveredRegionIndex]?.count ?? 0)} genes
+  </div>
+)}
+
+
+        {/* Gene popup panel */}
+        {popup.visible && popup.point && popup.position && (
+          <div>
+            <GeneDetailsPanel
+              selectedGene={popup.point}
+              allPoints={points}
+              onJumpTo={jumpToGeneByName}
+              onClose={() =>
+                setPopup({ visible: false, point: null, position: null })
+              }
             />
-            <h3
-              className="h5 mb-2"
-              style={{
-                color: theme.colors?.geneTerrain?.textPrimary || "#333333",
-              }}
-            >
-              {popup.point.geneName}
-            </h3>
-            <p
-              className="small mb-2"
-              style={{
-                color: theme.colors?.geneTerrain?.textMuted || "#666666",
-              }}
-            >
-              ID: {popup.point.geneId}
-            </p> */}
+          </div>
+        )}
 
-            {/* Add value color based on expression level */}
-            {/* <p
-              className="small mb-2"
-              style={{
-                color: getSpectralColor(popup.point.value, theme),
-              }}
-            >
-              Value: {popup.point.value.toFixed(2)}
-            </p>
-
-            <div className="mb-2">
-              <h4 className="h6 mb-1" style={{ color: "white" }}>
-                Pathways:
-              </h4>
-              <ul
-                className="list-unstyled ps-3 small"
-                style={{ color: theme.colors?.geneTerrain?.gray || "#687488" }}
-              >
-                {popup.point.pathways.map((pathway, index) => (
-                  <li key={index} className="mb-1">
-                    • {pathway}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <p
-              className="small"
-              style={{ color: theme.colors?.geneTerrain?.gray || "#687488" }}
-            >
-              {popup.point.description}
-            </p> */}
-
-            {/* Add the exclude button */}
-            {/* <div className="d-flex justify-content-end mt-3">
-              <button
-                className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2"
-                onClick={() => popup.point && excludeGene(popup.point.geneId)}
-                style={{
-                  fontSize: "0.8rem",
-                  padding: "0.25rem 0.5rem",
-                  color: "#f87171",
-                  borderColor: "#f87171",
-                }}
-              >
-                <i className="bi bi-trash"></i>
-                Remove Gene
-              </button>
-            </div> */}
-
-            {popup.visible && popup.point && popup.position && (
-              <div>
-                <GeneDetailsPanel
-                  selectedGene={popup.point}
-                  allPoints={points}
-                  onJumpTo={jumpToGeneByName}
-                  onClose={() => setPopup({ visible: false, point: null, position: null })}
-                />
-              </div>
-            )}
-          {/* </div>
-        )} */}
-
+        {/* Bottom-right controls */}
         <div className="position-absolute bottom-0 end-0 m-3 d-flex flex-column gap-2">
-          {/* Layer control (Google Maps style) */}
-          {/* Layer dropdown with images */}
+          {/* Layer dropdown */}
           <div className="dropdown">
             <button
               className="btn btn-lg rounded-circle shadow"
@@ -1514,6 +1426,7 @@ export function GaussianMap({
             >
               <Layers className="w-6 h-6" />
             </button>
+
             <div
               className="dropdown-menu p-0 shadow border-0"
               style={{
@@ -1529,47 +1442,38 @@ export function GaussianMap({
               <div
                 className="p-2 text-white"
                 style={{
-                  backgroundColor:
-                    theme.colors?.geneTerrain?.headerBg || "#1E6B52",
+                  backgroundColor: theme.colors?.geneTerrain?.headerBg || "#1E6B52",
                 }}
               >
                 <div className="fw-bold small">Layer Style</div>
               </div>
+
               {availableLayers.map((layer) => (
                 <div
                   key={layer.id}
                   className="border-bottom"
                   style={{
-                    borderColor: `${theme.colors?.geneTerrain?.neutral || "#d1d5db"
-                      }20`,
+                    borderColor: `${
+                      theme.colors?.geneTerrain?.neutral || "#d1d5db"
+                    }20`,
                   }}
                 >
                   <button
                     className="dropdown-item d-flex align-items-center py-3 px-3 layer-btn-hover"
                     onClick={() =>
-                      setCurrentLayer(
-                        layer.id as "gaussian" | "discrete" | "water" | "sky"
-                      )
+                      setCurrentLayer(layer.id as "gaussian" | "discrete" | "water" | "sky")
                     }
                     style={{
                       backgroundColor:
                         currentLayer === layer.id
-                          ? `${theme.colors?.geneTerrain?.primary || "#1E6B52"
-                          }20`
+                          ? `${theme.colors?.geneTerrain?.primary || "#1E6B52"}20`
                           : "transparent",
                       position: "relative",
-                      color:
-                        theme.colors?.geneTerrain?.textPrimary || "#333333",
+                      color: theme.colors?.geneTerrain?.textPrimary || "#333333",
                     }}
                   >
-                    <div
-                      className="d-flex align-items-center"
-                      style={{ width: "100%" }}
-                    >
-                      <div
-                        className="me-3"
-                        style={{ width: "60px", height: "40px" }}
-                      >
+                    <div className="d-flex align-items-center" style={{ width: "100%" }}>
+                      <div className="me-3" style={{ width: "60px", height: "40px" }}>
                         <img
                           src={layer.image}
                           alt={layer.name}
@@ -1578,34 +1482,27 @@ export function GaussianMap({
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
-                            border: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
-                              }`,
+                            border: `1px solid ${
+                              theme.colors?.geneTerrain?.border || "#E2E8F0"
+                            }`,
                             borderRadius: "4px",
                           }}
                         />
                       </div>
+
                       <div>
                         <div className="d-flex align-items-center gap-2">
                           <i
                             className={`bi ${layer.icon}`}
                             style={{
                               fontSize: "1rem",
-                              color:
-                                theme.colors?.geneTerrain?.textPrimary ||
-                                "#333333",
+                              color: theme.colors?.geneTerrain?.textPrimary || "#333333",
                             }}
                           ></i>
-                          <span
-                            style={{
-                              color:
-                                theme.colors?.geneTerrain?.textPrimary ||
-                                "#333333",
-                            }}
-                          >
-                            {layer.name}
-                          </span>
+                          <span>{layer.name}</span>
                         </div>
                       </div>
+
                       {currentLayer === layer.id && (
                         <div
                           className="position-absolute"
@@ -1618,8 +1515,7 @@ export function GaussianMap({
                           <i
                             className="bi bi-check-circle-fill"
                             style={{
-                              color:
-                                theme.colors?.geneTerrain?.primary || "#1E6B52",
+                              color: theme.colors?.geneTerrain?.primary || "#1E6B52",
                               fontSize: "1.25rem",
                             }}
                           ></i>
@@ -1629,12 +1525,12 @@ export function GaussianMap({
                   </button>
                 </div>
               ))}
+
               <div
                 className="p-2 d-flex justify-content-end"
                 style={{
                   backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-                  borderTop: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
-                    }`,
+                  borderTop: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"}`,
                 }}
               >
                 <Button
@@ -1647,9 +1543,7 @@ export function GaussianMap({
                       const dropdownToggle = dropdown.querySelector(
                         '[data-bs-toggle="dropdown"]'
                       );
-                      if (dropdownToggle) {
-                        (dropdownToggle as HTMLElement).click();
-                      }
+                      if (dropdownToggle) (dropdownToggle as HTMLElement).click();
                     }
                   }}
                   colorScheme="teal"
@@ -1662,7 +1556,7 @@ export function GaussianMap({
             </div>
           </div>
 
-          {/* Replace the existing contour controls with this unified version */}
+          {/* Contour settings (discrete only) */}
           {currentLayer === "discrete" && (
             <div className="position-relative ms-2">
               <button
@@ -1687,16 +1581,14 @@ export function GaussianMap({
                     right: "0",
                     width: "300px",
                     backgroundColor: theme.colors?.geneTerrain?.bg || "#FFFFFF",
-                    border: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
-                      }`,
+                    border: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"}`,
                     overflow: "hidden",
                   }}
                 >
                   <div
                     className="d-flex justify-content-between align-items-center p-2"
                     style={{
-                      backgroundColor:
-                        theme.colors?.geneTerrain?.headerBg || "#1E6B52",
+                      backgroundColor: theme.colors?.geneTerrain?.headerBg || "#1E6B52",
                       color: "white",
                     }}
                   >
@@ -1708,19 +1600,14 @@ export function GaussianMap({
                     />
                   </div>
 
-                  {/* Line Thickness Control */}
                   <div className="p-3">
-                    {/* Thickness settings */}
                     <div className="mb-4">
                       <div className="d-flex justify-content-between mb-2">
-                        <label className="form-label fw-medium">
-                          Line Thickness
-                        </label>
+                        <label className="form-label fw-medium">Line Thickness</label>
                         <span
                           className="badge"
                           style={{
-                            backgroundColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            backgroundColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
                             color: "white",
                           }}
                         >
@@ -1736,21 +1623,18 @@ export function GaussianMap({
                           max="0.25"
                           step="0.01"
                           value={lineThickness}
-                          onChange={(e) =>
-                            setLineThickness(parseFloat(e.target.value))
-                          }
+                          onChange={(e) => setLineThickness(parseFloat(e.target.value))}
                         />
                         <span className="text-muted small">Thick</span>
                       </div>
+
                       <div className="d-flex gap-2 mt-2">
                         <button
                           className="btn btn-sm btn-outline-primary flex-grow-1"
                           onClick={() => setLineThickness(0.06)}
                           style={{
-                            borderColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
-                            color:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            borderColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            color: theme.colors?.geneTerrain?.primary || "#1E6B52",
                           }}
                         >
                           Thin
@@ -1759,10 +1643,8 @@ export function GaussianMap({
                           className="btn btn-sm btn-outline-primary flex-grow-1"
                           onClick={() => setLineThickness(0.12)}
                           style={{
-                            borderColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
-                            color:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            borderColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            color: theme.colors?.geneTerrain?.primary || "#1E6B52",
                           }}
                         >
                           Medium
@@ -1771,10 +1653,8 @@ export function GaussianMap({
                           className="btn btn-sm btn-outline-primary flex-grow-1"
                           onClick={() => setLineThickness(0.18)}
                           style={{
-                            borderColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
-                            color:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            borderColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            color: theme.colors?.geneTerrain?.primary || "#1E6B52",
                           }}
                         >
                           Thick
@@ -1782,23 +1662,20 @@ export function GaussianMap({
                       </div>
                     </div>
 
-                    {/* Isoline Density Control */}
                     <div>
                       <div className="d-flex justify-content-between mb-2">
-                        <label className="form-label fw-medium">
-                          Number of Isolines
-                        </label>
+                        <label className="form-label fw-medium">Number of Isolines</label>
                         <span
                           className="badge"
                           style={{
-                            backgroundColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            backgroundColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
                             color: "white",
                           }}
                         >
                           {isolineSpacing.toFixed(2)}
                         </span>
                       </div>
+
                       <div className="d-flex align-items-center gap-2">
                         <span className="text-muted small">More</span>
                         <input
@@ -1808,21 +1685,18 @@ export function GaussianMap({
                           max="2.0"
                           step="0.1"
                           value={isolineSpacing}
-                          onChange={(e) =>
-                            setIsolineSpacing(parseFloat(e.target.value))
-                          }
+                          onChange={(e) => setIsolineSpacing(parseFloat(e.target.value))}
                         />
                         <span className="text-muted small">Fewer</span>
                       </div>
+
                       <div className="d-flex gap-2 mt-2">
                         <button
                           className="btn btn-sm btn-outline-primary flex-grow-1"
                           onClick={() => setIsolineSpacing(0.5)}
                           style={{
-                            borderColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
-                            color:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            borderColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            color: theme.colors?.geneTerrain?.primary || "#1E6B52",
                           }}
                         >
                           Dense
@@ -1831,10 +1705,8 @@ export function GaussianMap({
                           className="btn btn-sm btn-outline-primary flex-grow-1"
                           onClick={() => setIsolineSpacing(1.0)}
                           style={{
-                            borderColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
-                            color:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            borderColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            color: theme.colors?.geneTerrain?.primary || "#1E6B52",
                           }}
                         >
                           Medium
@@ -1843,10 +1715,8 @@ export function GaussianMap({
                           className="btn btn-sm btn-outline-primary flex-grow-1"
                           onClick={() => setIsolineSpacing(1.5)}
                           style={{
-                            borderColor:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
-                            color:
-                              theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            borderColor: theme.colors?.geneTerrain?.primary || "#1E6B52",
+                            color: theme.colors?.geneTerrain?.primary || "#1E6B52",
                           }}
                         >
                           Sparse
@@ -1859,54 +1729,40 @@ export function GaussianMap({
             </div>
           )}
 
-          {/* Existing lasso button */}
+          {/* Lasso button */}
           <button
             onClick={toggleLasso}
-            className={`btn btn-lg rounded-circle shadow ${lasso.active ? "btn-primary" : "btn-light"
-              }`}
-            title={
-              lasso.active ? "Complete selection" : "Start lasso selection"
-            }
+            className={`btn btn-lg rounded-circle shadow ${
+              lasso.active ? "btn-primary" : "btn-light"
+            }`}
+            title={lasso.active ? "Complete selection" : "Start lasso selection"}
           >
             <Lasso color="#4B5563" className="w-6 h-6" />
           </button>
 
-          {/* Rest of your buttons */}
+          {/* Clear selections */}
           {lasso.regions.length > 0 && (
-            <>
-              <button
-                onClick={clearSelection}
-                className="btn btn-lg rounded-circle shadow"
-                title="Clear all selections"
-              >
-                <X color="#4B5563" className="w-6 h-6" />
-              </button>
-            </>
+            <button
+              onClick={clearSelection}
+              className="btn btn-lg rounded-circle shadow"
+              title="Clear all selections"
+            >
+              <X color="#4B5563" className="w-6 h-6" />
+            </button>
           )}
-          <button
-            onClick={() => adjustZoom(0.1)}
-            className="btn  btn-lg rounded-circle shadow"
-          >
+
+          {/* Zoom buttons */}
+          <button onClick={() => adjustZoom(0.1)} className="btn btn-lg rounded-circle shadow">
             <ZoomIn color="#4B5563" className="w-6 h-6" />
           </button>
-          <button
-            onClick={() => adjustZoom(-0.1)}
-            className="btn  btn-lg rounded-circle shadow"
-          >
+          <button onClick={() => adjustZoom(-0.1)} className="btn btn-lg rounded-circle shadow">
             <ZoomOut color="#4B5563" className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Add a badge showing excluded count and option to restore */}
+        {/* Restore excluded genes */}
         {excludedGeneIds.size > 0 && (
-          <div
-            className="position-absolute"
-            style={{
-              top: "20px",
-              right: "20px",
-              zIndex: 1000,
-            }}
-          >
+          <div className="position-absolute" style={{ top: "20px", right: "20px", zIndex: 1000 }}>
             <div className="d-flex align-items-center gap-2">
               <button
                 className="btn btn-sm btn-danger"
@@ -1934,35 +1790,31 @@ export function GaussianMap({
           height: "400px",
           background: theme.colors?.geneTerrain?.bg || "#FFFFFF",
           zIndex: 1050,
-          borderTop: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
-            }`,
+          borderTop: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"}`,
           boxShadow: "0 -4px 6px -1px rgba(0,0,0,0.1)",
         }}
       >
         <div
           className="d-flex align-items-center justify-content-between p-2"
           style={{
-            borderBottom: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
-              }`,
+            borderBottom: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"}`,
             backgroundColor: theme.colors?.geneTerrain?.headerBg || "#1E6B52",
           }}
         >
-          <h5 className="mb-0" style={{ color: "geneTerrain.accent2" }}>
+          <h5 className="mb-0" style={{ color: "white" }}>
             Selection Summary
           </h5>
           <button
             className="btn-close"
             style={{
               color: "white",
-              filter: "brightness(0) invert(1)", // This makes the close icon white
+              filter: "brightness(0) invert(1)",
             }}
             onClick={() => setShowSummaryPanel(false)}
           ></button>
         </div>
-        <div
-          className="p-3 overflow-auto"
-          style={{ height: "calc(100% - 40px)" }}
-        >
+
+        <div className="p-3 overflow-auto" style={{ height: "calc(100% - 40px)" }}>
           <GeneSelectionSummary
             selectedPoints={selectedPoints}
             regions={lasso.regions}
@@ -1977,8 +1829,7 @@ export function GaussianMap({
         className="position-fixed bottom-0 start-50 translate-middle-x mb-2 btn"
         onClick={() => setShowSummaryPanel(true)}
         style={{
-          display:
-            !showSummaryPanel && selectedPoints.length > 0 ? "block" : "none",
+          display: !showSummaryPanel && selectedPoints.length > 0 ? "block" : "none",
           zIndex: 1051,
           backgroundColor: theme.colors?.geneTerrain?.accent1 || "#80BC00",
           color: "white",
@@ -1988,19 +1839,35 @@ export function GaussianMap({
         Selection Summary ({selectedPoints.length} genes)
       </button>
 
-      {/* Add this to your JSX return section */}
+      {/* Comparison popup */}
       {showComparisonPopup && comparisonSamples.length > 0 && (
         <ComparisonPopup
           samples={comparisonSamples}
           onClose={() => setShowComparisonPopup(false)}
         />
       )}
+
+      <LassoRegionPanel
+  isOpen={isRegionPanelOpen}
+  title={
+    activeRegionIndex !== null
+      ? (lasso.regions[activeRegionIndex]?.label ??
+          `Selection ${activeRegionIndex + 1}`)
+      : "Selection"
+  }
+  onClose={() => setIsRegionPanelOpen(false)}
+  activeRegionIndex={activeRegionIndex}
+  regions={lasso.regions}
+  filteredPoints={filteredPoints}
+  datasetId={datasetId}
+/>
+
+
     </div>
   );
 }
 
 export const normalizePoints = (points: Point[]): Point[] => {
-  // Find min and max values for x and y coordinates
   const xValues = points.map((p) => p.x);
   const yValues = points.map((p) => p.y);
   const xMin = Math.min(...xValues);
@@ -2008,7 +1875,6 @@ export const normalizePoints = (points: Point[]): Point[] => {
   const yMin = Math.min(...yValues);
   const yMax = Math.max(...yValues);
 
-  // Add padding (10% on each side)
   const padding = 0.1;
   const xRange = xMax - xMin;
   const yRange = yMax - yMin;
@@ -2017,7 +1883,6 @@ export const normalizePoints = (points: Point[]): Point[] => {
   const paddedYMin = yMin - yRange * padding;
   const paddedYMax = yMax + yRange * padding;
 
-  // Normalize points to fit within canvas (0 to CANVAS_WIDTH/HEIGHT)
   return points.map((point) => ({
     ...point,
     x: ((point.x - paddedXMin) / (paddedXMax - paddedXMin)) * CANVAS_WIDTH,
@@ -2025,10 +1890,4 @@ export const normalizePoints = (points: Point[]): Point[] => {
   }));
 };
 
-// Replace the callGaussianMap function with direct component usage
-
-// Instead of:
-// callGaussianMap(points, datasetId, sampleId, datasets)
-
-// Use the GaussianMap component directly:
 export default GaussianMap;
