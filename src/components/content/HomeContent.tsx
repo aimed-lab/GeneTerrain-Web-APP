@@ -4,16 +4,12 @@ import {
   Container,
   Heading,
   Text,
-  Select,
-  FormControl,
-  FormLabel,
   Table,
   Thead,
   Tbody,
   Tr,
   Th,
   Td,
-  Skeleton,
   Alert,
   AlertIcon,
   VStack,
@@ -26,13 +22,12 @@ import {
 } from "@chakra-ui/react";
 import { MotionBox, MotionHeading } from "../common/MotionComponents";
 import GaussianMap, { normalizePoints } from "../../GaussianPlots/GaussianMap";
-import { SearchIcon } from "@chakra-ui/icons";
 import { FaDna } from "react-icons/fa";
 import {
-  generateRandomPoints,
   generateMockDatasets,
 } from "../../services/datasetService";
 import { useSamplesContext } from "../../context/SamplesContext";
+import { useChat } from "../context/ChatContext";
 import CombinedDatasetSelector from "../datasets/CombinedDatasetSelector";
 
 // Define necessary interfaces
@@ -70,22 +65,29 @@ const fetchDatasets = async (): Promise<Dataset[]> => {
     return await response.json();
   } catch (error) {
     console.error("Error fetching datasets:", error);
-    // Return mock data as fallback
     return generateMockDatasets(20);
   }
 };
 
-// Main HomeContent component
+// Main HomeContent component (unused/legacy — actual home is components/context/HomeContent.tsx)
 const HomeContent: React.FC = () => {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const { selectedDataset, setSelectedDataset, samples } = useSamplesContext();
+  const { updatePageContext } = useChat();
   const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMapVisible, setIsMapVisible] = useState(false);
   const toast = useToast();
 
-  // Load datasets on component mount
+  // Sync selected dataset into chat context
+  useEffect(() => {
+    if (selectedDataset) {
+      updatePageContext({ datasetId: selectedDataset.id });
+    }
+  }, [selectedDataset, updatePageContext]);
+
+  // Load datasets on mount
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -100,16 +102,12 @@ const HomeContent: React.FC = () => {
         setIsLoading(false);
       }
     };
-
     loadData();
   }, []);
 
-  // Handle sample selection
   const handleSampleSelect = (sample: Sample) => {
     setSelectedSample(sample);
-    setIsMapVisible(false); // Reset map before showing a new one
-
-    // Show success toast
+    setIsMapVisible(false);
     toast({
       title: "Sample selected",
       description: `Selected ${sample.name} from ${selectedDataset?.name}`,
@@ -119,7 +117,6 @@ const HomeContent: React.FC = () => {
     });
   };
 
-  // Handle visualization request
   const handleVisualize = () => {
     if (!selectedDataset || !selectedSample) return;
     setIsMapVisible(true);
@@ -133,7 +130,6 @@ const HomeContent: React.FC = () => {
         transition={{ duration: 0.5 }}
       >
         <VStack spacing={8} align="stretch">
-          {/* Header */}
           <Box textAlign="center" mb={6}>
             <MotionHeading
               size="xl"
@@ -150,7 +146,6 @@ const HomeContent: React.FC = () => {
             </Text>
           </Box>
 
-          {/* Error display */}
           {error && (
             <Alert status="error" borderRadius="md">
               <AlertIcon />
@@ -158,10 +153,8 @@ const HomeContent: React.FC = () => {
             </Alert>
           )}
 
-          {/* Combined Dataset Selector */}
           <CombinedDatasetSelector isLoading={isLoading} />
 
-          {/* Sample selection */}
           {selectedDataset && (
             <MotionBox
               initial={{ opacity: 0, y: 20 }}
@@ -204,9 +197,7 @@ const HomeContent: React.FC = () => {
                         <Th color="white">Name</Th>
                         <Th color="white">Condition</Th>
                         <Th color="white">Date</Th>
-                        <Th color="white" width="120px">
-                          Action
-                        </Th>
+                        <Th color="white" width="120px">Action</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
@@ -214,11 +205,7 @@ const HomeContent: React.FC = () => {
                         <Tr
                           key={sample.id}
                           cursor="pointer"
-                          bg={
-                            selectedSample?.id === sample.id
-                              ? "blue.50"
-                              : undefined
-                          }
+                          bg={selectedSample?.id === sample.id ? "blue.50" : undefined}
                           _hover={{ bg: "gray.50" }}
                           onClick={() => handleSampleSelect(sample)}
                         >
@@ -255,7 +242,6 @@ const HomeContent: React.FC = () => {
             </MotionBox>
           )}
 
-          {/* Visualization area */}
           {isMapVisible && selectedSample && selectedDataset && (
             <MotionBox
               mt={8}

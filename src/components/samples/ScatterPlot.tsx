@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
+import * as d3 from "d3";
 import {
   Box,
   Spinner,
@@ -9,12 +10,34 @@ import {
   SliderTrack,
   SliderFilledTrack,
   SliderThumb,
+  Button,
+  VStack,
+  Badge,
+  IconButton,
+  Icon,
+  HStack,
+  Divider,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem
 } from "@chakra-ui/react";
+import { MdClose, MdCenterFocusStrong, MdFilterCenterFocus } from "react-icons/md";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import Plot from "react-plotly.js";
 import { Layout, Data, Shape } from "plotly.js";
 import { useSamplesContext } from "../../context/SamplesContext";
 import { Sample } from "../../types";
 import { API_CONFIG } from "../../config/appConfig";
+import { useNavigate } from "react-router-dom";
+import { Point } from "../../GaussianPlots/types";
+import { fetchGeneExpressionData } from "../../modules/GeneExpressionDataFetcher/fetchGeneExpressionData";
+
+interface LassoData {
+  label: string;
+  sampleIds: string[];
+  points: Point[];
+}
 
 interface ScatterPlotProps {
   selectedSampleIds: Set<string>;
@@ -148,6 +171,56 @@ const COLOR_PALETTE = [
   "#bcbd22",
   "#17becf",
 ];
+type LassoRegion = {
+  id: string;
+  x: number[]; // polygon x coords (data space)
+  y: number[]; // polygon y coords (data space)
+  selectedIds: string[]; // sample IDs inside this lasso
+};
+
+const MAX_LASSOS = 2;
+
+function polygonToPath(xs: number[], ys: number[]): string {
+  if (!xs || !ys || xs.length < 3 || ys.length < 3) return "";
+  const n = Math.min(xs.length, ys.length);
+  const pts: Array<[number, number]> = [];
+  for (let i = 0; i < n; i++) {
+    const x = xs[i];
+    const y = ys[i];
+    if (Number.isFinite(x) && Number.isFinite(y)) pts.push([x, y]);
+  }
+  if (pts.length < 3) return "";
+
+  const [x0, y0] = pts[0];
+  const rest = pts.slice(1).map(([x, y]) => `L ${x},${y}`).join(" ");
+  return `M ${x0},${y0} ${rest} Z`;
+}
+
+function getPolygonFromSelectEvent(event: any): { x: number[]; y: number[] } | null {
+  // Lasso selection
+  const lp = event?.lassoPoints;
+  if (lp?.x?.length && lp?.y?.length) {
+    return { x: lp.x as number[], y: lp.y as number[] };
+  }
+
+  // Box selection fallback (range)
+  const xr = event?.range?.x;
+  const yr = event?.range?.y;
+  if (Array.isArray(xr) && xr.length === 2 && Array.isArray(yr) && yr.length === 2) {
+    const [x0, x1] = xr;
+    const [y0, y1] = yr;
+    return { x: [x0, x1, x1, x0], y: [y0, y0, y1, y1] };
+  }
+
+  return null;
+}
+
+function makeId(): string {
+  // safe id for browsers without crypto.randomUUID
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (typeof crypto !== "undefined" && (crypto as any).randomUUID) return (crypto as any).randomUUID();
+  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
 
 // Utility to distinguish continuous vs discrete numeric
 function getNumericSubtype(values: any[]): "continuous" | "discrete" {
@@ -178,6 +251,52 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     setSelectedSampleIds: setContextSelectedSampleIds,
   } = useSamplesContext();
 
+  const navigate = useNavigate();
+
+  const [lassoRegions, setLassoRegions] = useState<LassoRegion[]>([]);
+  const [focusedLassoId, setFocusedLassoId] = useState<string | null>(null);
+
+  // Comparison data state
+  const [comparisonData, setComparisonData] = useState<LassoData[]>([]);
+  const [isComparing, setIsComparing] = useState(false);
+
+  // Function to handle "Compare" click with real data fetching
+  const handleShowComparison = async () => {
+    if (lassoRegions.length < 2) return;
+
+    setIsComparing(true);
+    try {
+      const dataPromises = lassoRegions.map(async (region, i) => {
+        // Fetch REAL data for this region (aggregating samples)
+        const points = await fetchGeneExpressionData(
+          region.selectedIds,
+          selectedDataset || { id: "default", name: "Default", type: "gene_expression" } as any
+        );
+
+        // Get sample metadata for demographics summary
+        const samples = filteredSamples.filter(s => region.selectedIds.includes(s.id));
+
+        return {
+          label: `Selection11 ${i + 1}`,
+          sampleIds: region.selectedIds,
+          points: points,
+          samples: samples // Include full sample objects with metadata
+        };
+      });
+
+      const results = await Promise.all(dataPromises);
+      // Store specifically for lasso comparison
+      localStorage.setItem("LASSO_COMPARISON_DATA", JSON.stringify(results));
+
+      // Open in a new tab as requested
+      window.open("/lasso-comparison", "_blank");
+    } catch (error) {
+      console.error("Error fetching comparison data:", error);
+    } finally {
+      setIsComparing(false);
+    }
+  };
+
   const [colorField, setColorField] = useState<string>("");
   const [colorFieldOptions, setColorFieldOptions] = useState<string[]>([]);
   const [currentColumnType, setCurrentColumnType] = useState<
@@ -197,6 +316,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
   } | null>(null);
   const [neighborhoodRadius, setNeighborhoodRadius] = useState<number>(2);
   const [showRadiusSlider, setShowRadiusSlider] = useState<boolean>(false);
+
+  // Capture State
+  const [hasCaptured, setHasCaptured] = useState<boolean>(false);
+  const [visibleTraceCount, setVisibleTraceCount] = useState<number>(0);
+  const [totalTraceCount, setTotalTraceCount] = useState<number>(0);
+  // Store visibility state by trace name to persist across re-renders
+  const [traceVisibility, setTraceVisibility] = useState<Record<string, boolean | "legendonly">>({});
+
 
   const plotRef = useRef<any>(null);
   // Ref for the actual Plotly DOM node
@@ -271,19 +398,70 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     [fixedAxisRange]
   );
 
-  // Capture initial axis ranges after first plot render and lock them
-  useEffect(() => {
-    if (plotlyNodeRef.current && !fixedAxisRange) {
-      // Get current axis ranges from the plot
-      const xRange = plotlyNodeRef.current.layout?.xaxis?.range;
-      const yRange = plotlyNodeRef.current.layout?.yaxis?.range;
-      if (xRange && yRange) {
-        // Make axis ranges square
-        const squareRanges = getSquareAxisRanges(xRange, yRange);
-        setFixedAxisRange(squareRanges);
-      }
+  const layoutWithShapes = useMemo(() => {
+    const shapes: Partial<Shape>[] = [];
+
+    // Neighborhood circle (if active)
+    if (showRadiusSlider && neighborhoodCenter) {
+      shapes.push({
+        type: "circle",
+        xref: "x",
+        yref: "y",
+        x0: neighborhoodCenter.x - neighborhoodRadius,
+        x1: neighborhoodCenter.x + neighborhoodRadius,
+        y0: neighborhoodCenter.y - neighborhoodRadius,
+        y1: neighborhoodCenter.y + neighborhoodRadius,
+        line: { color: "rgba(30,107,82,0.5)", width: 2 },
+        fillcolor: "rgba(30,107,82,0.08)",
+        layer: "above",
+      });
     }
-  }, [plotlyNodeRef.current]);
+
+    // Up to 2 lasso polygons
+    const lassoColors = [
+      { line: "rgba(30,107,82,0.95)", fill: "rgba(30,107,82,0.12)" },
+      { line: "rgba(255,127,14,0.95)", fill: "rgba(255,127,14,0.12)" },
+    ];
+
+    lassoRegions.forEach((region, idx) => {
+      const path = polygonToPath(region.x, region.y);
+      if (!path) return;
+
+      const c = lassoColors[idx % lassoColors.length];
+      shapes.push({
+        type: "path",
+        path,
+        xref: "x",
+        yref: "y",
+        line: { color: c.line, width: 2 },
+        fillcolor: c.fill,
+        layer: "above",
+      });
+    });
+
+    return {
+      ...(baseLayout as any),
+      dragmode: "lasso", // default tool; user can still switch via toolbar
+      shapes,
+    } as Partial<Layout>;
+  }, [
+    baseLayout,
+    lassoRegions,
+    showRadiusSlider,
+    neighborhoodCenter,
+    neighborhoodRadius,
+  ]);
+
+  useEffect(() => {
+    if (lassoRegions.length === 0) return;
+
+    const union = new Set<string>();
+    lassoRegions.forEach((r) => r.selectedIds.forEach((id) => union.add(id)));
+
+    setActiveSelectionSource("scatter");
+    setContextSelectedSampleIds(union);
+  }, [lassoRegions, setActiveSelectionSource, setContextSelectedSampleIds]);
+
 
   // Memoize plotData so it only updates when actual data changes
   const memoizedPlotData = useMemo(() => {
@@ -292,10 +470,10 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
         const embedding = embeddingDataMap.get(sample.sampleid || sample.id);
         if (!embedding) return null;
         return {
+          ...sample,
           x: embedding.x,
           y: embedding.y,
           sampleid: sample.sampleid || sample.id,
-          ...sample,
         };
       })
       .filter(Boolean);
@@ -317,30 +495,44 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
     return plotData;
   }, [embeddingDataMap, filteredSamples]);
 
-  // Effect: update only the circle shape on radius/center change
+  // Capture initial axis ranges based on actual data coordinates
   useEffect(() => {
-    if (plotlyNodeRef.current && showRadiusSlider && neighborhoodCenter) {
-      const shape: Partial<Shape> = {
-        type: "circle",
-        xref: "x",
-        yref: "y",
-        x0: neighborhoodCenter.x - neighborhoodRadius,
-        x1: neighborhoodCenter.x + neighborhoodRadius,
-        y0: neighborhoodCenter.y - neighborhoodRadius,
-        y1: neighborhoodCenter.y + neighborhoodRadius,
-        line: {
-          color: "rgba(30,107,82,0.5)",
-          width: 2,
-        },
-        fillcolor: "rgba(30,107,82,0.08)",
-      };
-      window.Plotly &&
-        window.Plotly.relayout(plotlyNodeRef.current, { shapes: [shape] });
-    } else if (plotlyNodeRef.current) {
-      window.Plotly &&
-        window.Plotly.relayout(plotlyNodeRef.current, { shapes: [] });
+    if (memoizedPlotData.length > 0 && !fixedAxisRange) {
+      const xs = memoizedPlotData.map((d: any) => d.x);
+      const ys = memoizedPlotData.map((d: any) => d.y);
+
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+
+      const xRange = maxX - minX;
+      const yRange = maxY - minY;
+
+      // Add 10% padding
+      const xPadding = xRange * 0.1 || 1;
+      const yPadding = yRange * 0.1 || 1;
+
+      const paddedMinX = minX - xPadding;
+      const paddedMaxX = maxX + xPadding;
+      const paddedMinY = minY - yPadding;
+      const paddedMaxY = maxY + yPadding;
+
+      // Make axis ranges square
+      const squareRanges = getSquareAxisRanges(
+        [paddedMinX, paddedMaxX],
+        [paddedMinY, paddedMaxY]
+      );
+      setFixedAxisRange(squareRanges);
+      console.log("[DEBUG] Initial Axis Range set from data:", squareRanges);
     }
-  }, [showRadiusSlider, neighborhoodCenter, neighborhoodRadius]);
+  }, [memoizedPlotData, fixedAxisRange]);
+
+  // Reset fixed axis range when dataset or filtered samples change significantly
+  useEffect(() => {
+    setFixedAxisRange(null);
+  }, [filteredSamples]);
+
 
   useEffect(() => {
     if (!filteredSamples || filteredSamples.length === 0) {
@@ -517,9 +709,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
                   width: isSelected ? 2 : 1,
                 },
               },
-              name: `${category} (n=${count})${
-                isSelected ? " (Selected)" : ""
-              }`,
+              name: `${category} (n=${count})${isSelected ? " (Selected)" : ""
+                }`,
               text: categoryPoints.map(createHoverText),
               hoverinfo: "text",
               customdata: categoryPoints.map(
@@ -582,6 +773,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
 
   // On point click, set center and show slider
   const handlePointClick = (event: any) => {
+    setLassoRegions([]); // switching to neighborhood mode clears old lassos
+
     const sampleId = event.points[0]?.customdata;
     if (sampleId && embeddingDataMap.has(sampleId)) {
       const coords = embeddingDataMap.get(sampleId);
@@ -604,27 +797,200 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
 
   // Hide slider on lasso select or outside click
   const handleLassoSelect = (event: any) => {
+    // Lasso mode should cancel neighborhood mode
     setShowRadiusSlider(false);
     setNeighborhoodCenter(null);
-    const selectedPoints = event.points || [];
-    const selectedIds = new Set<string>();
-    selectedPoints.forEach((point: any) => {
-      const sampleId = point.customdata;
-      if (sampleId) {
-        const sample = filteredSamples.find(
-          (s) => (s.sampleid || s.id) === sampleId
-        );
-        if (sample) {
-          const correctId = sample.sampleid || sample.id;
-          selectedIds.add(correctId);
+
+    const poly = getPolygonFromSelectEvent(event);
+    const selectedPoints = event?.points || [];
+    if (!poly || selectedPoints.length === 0) return;
+
+    const selectedIds: string[] = [];
+    selectedPoints.forEach((p: any) => {
+      const id = p?.customdata;
+      if (id) selectedIds.push(String(id));
+    });
+
+    const newRegion: LassoRegion = {
+      id: makeId(),
+      x: poly.x,
+      y: poly.y,
+      selectedIds,
+    };
+
+    setLassoRegions((prev) => {
+      const next = [...prev, newRegion];
+      // keep only last 2 lassos
+      return next.slice(-MAX_LASSOS);
+    });
+  };
+
+  // Calculate Convex Hull using d3
+  const calculateConvexHull = (points: [number, number][]) => {
+    if (points.length < 3) return null;
+    const hull = d3.polygonHull(points);
+    return hull; // returns Array<[number, number]> or null
+  };
+
+  // Create lasso region from currently visible points
+  const createLassoFromVisible = () => {
+    if (!plotlyNodeRef.current || !plotlyNodeRef.current.data) return;
+
+    // Collect all visible points
+    const visiblePoints: [number, number][] = [];
+    const visibleIds: string[] = [];
+
+    // Iterate through traces in the plot
+    const data = plotlyNodeRef.current.data as any[];
+    data.forEach((trace: any) => {
+      // Check if trace is visible (true or undefined means visible; 'legendonly' means hidden)
+      // Also ensure it's a scatter/marker trace with data
+      if (
+        (trace.visible === true || trace.visible === undefined) &&
+        trace.x &&
+        trace.y &&
+        trace.customdata
+      ) {
+        // Collect points
+        for (let i = 0; i < trace.x.length; i++) {
+          const x = trace.x[i];
+          const y = trace.y[i];
+          const id = trace.customdata[i];
+          if (x !== undefined && y !== undefined && id) {
+            visiblePoints.push([x, y]);
+            visibleIds.push(String(id));
+          }
         }
       }
     });
-    if (selectedIds.size > 0) {
-      setActiveSelectionSource("scatter");
-      setContextSelectedSampleIds(selectedIds);
+
+    if (visiblePoints.length === 0) return;
+
+    // Calculate Hull
+    let hullPoints = calculateConvexHull(visiblePoints);
+
+    // If hull failed (e.g. collinear or < 3 points), use bounding box or verify
+    if (!hullPoints) {
+      if (visiblePoints.length >= 3) {
+        // fallback if d3 fails? d3.polygonHull returns null for collinear
+        // Just use bbox
+        const xs = visiblePoints.map(p => p[0]);
+        const ys = visiblePoints.map(p => p[1]);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        hullPoints = [[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]];
+      } else if (visiblePoints.length > 0) {
+        // Small number of points: small box around them
+        const xs = visiblePoints.map(p => p[0]);
+        const ys = visiblePoints.map(p => p[1]);
+        const minX = Math.min(...xs) - 0.5;
+        const maxX = Math.max(...xs) + 0.5;
+        const minY = Math.min(...ys) - 0.5;
+        const maxY = Math.max(...ys) + 0.5;
+        hullPoints = [[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]];
+      } else {
+        return;
+      }
+    }
+
+    // Separate x and y for LassoRegion
+    const hullX = hullPoints.map(p => p[0]);
+    const hullY = hullPoints.map(p => p[1]);
+
+    // Create new LassoRegion
+    const newRegion: LassoRegion = {
+      id: makeId(),
+      x: hullX,
+      y: hullY,
+      selectedIds: visibleIds,
+    };
+
+    setLassoRegions((prev) => {
+      // Append new region, keeping max 2
+      const next = [...prev, newRegion];
+      return next.slice(-MAX_LASSOS);
+    });
+    setHasCaptured(true);
+  };
+
+  const checkTraceVisibility = () => {
+    if (!plotlyNodeRef.current || !plotlyNodeRef.current.data) return;
+    const data = plotlyNodeRef.current.data as any[];
+    // Filter for actual data traces (scatter/markers) to avoid counting shapes if they ever become traces
+    const relevantTraces = data.filter((t: any) => t.type === 'scatter' || t.mode === 'markers');
+
+    const total = relevantTraces.length;
+    const visible = relevantTraces.filter((t: any) =>
+      t.visible === true || t.visible === undefined
+    ).length;
+
+    // Capture visibility map
+    const newVisibility: Record<string, boolean | "legendonly"> = {};
+    relevantTraces.forEach((t: any) => {
+      if (t.name) {
+        newVisibility[t.name] = t.visible === undefined ? true : t.visible;
+      }
+    });
+
+    setTotalTraceCount(total);
+    setVisibleTraceCount(visible);
+    setTraceVisibility(prev => {
+      // Only update if changed to avoid unnecessary re-renders?
+      // Actually, JSON.stringify check might be expensive, but safe for small number of traces.
+      if (JSON.stringify(prev) !== JSON.stringify(newVisibility)) {
+        return newVisibility;
+      }
+      return prev;
+    });
+  };
+
+  // Focus on a specific lasso region by zooming to its bounding box
+  const focusOnLasso = (regionId: string) => {
+    const region = lassoRegions.find(r => r.id === regionId);
+    if (!region || !plotlyNodeRef.current) return;
+
+    const xs = region.x;
+    const ys = region.y;
+
+    if (!xs.length || !ys.length) return;
+
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    // Add padding (20% on each side)
+    const xPadding = (maxX - minX) * 0.2;
+    const yPadding = (maxY - minY) * 0.2;
+
+    const xRange = [minX - xPadding, maxX + xPadding];
+    const yRange = [minY - yPadding, maxY + yPadding];
+
+    // Update the plot to zoom to this region
+    const update = {
+      'xaxis.range': xRange,
+      'yaxis.range': yRange
+    };
+
+    // Use Plotly.relayout to update the view
+    if (plotlyNodeRef.current && (window as any).Plotly) {
+      (window as any).Plotly.relayout(plotlyNodeRef.current, update);
+    }
+
+    setFocusedLassoId(regionId);
+  };
+
+  // Remove a specific lasso region
+  const removeLasso = (regionId: string) => {
+    setLassoRegions((prev) => prev.filter(r => r.id !== regionId));
+    if (focusedLassoId === regionId) {
+      setFocusedLassoId(null);
     }
   };
+
+
 
   if (!embeddingDataMap || embeddingDataMap.size === 0) {
     return <div>Loading embeddings...</div>;
@@ -658,6 +1024,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
         name: cat,
         text: catPoints.map((d) => d.sampleid),
         customdata: catPoints.map((d) => d.sampleid),
+        visible: traceVisibility[cat] !== undefined ? traceVisibility[cat] : true,
       };
     });
   } else if (
@@ -696,6 +1063,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
         name: cat,
         text: catPoints.map((d) => d.sampleid),
         customdata: catPoints.map((d) => d.sampleid),
+        visible: traceVisibility[cat] !== undefined ? traceVisibility[cat] : true,
       };
     });
   } else {
@@ -715,7 +1083,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
   }
 
   return (
-    <Box
+    <Flex
       w="100%"
       h="600px"
       bg="white"
@@ -723,120 +1091,278 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ selectedSampleIds }) => {
       boxShadow="sm"
       p={4}
       position="relative"
+      gap={4}
     >
-      <Flex justify="space-between" align="center" mb={4}>
-        <Text fontSize="lg" fontWeight="medium" color="geneTerrain.primary">
-          Statistical Analysis Embeddings
-        </Text>
-        <Flex align="center">
-          {currentColumnType === "numeric" &&
-            numericSubtype === "continuous" && (
-              <>
-                <Select
-                  value={clusterMethod}
-                  onChange={(e) => setClusterMethod(e.target.value as any)}
-                  width="120px"
-                  size="sm"
-                  bg="white"
-                  mr={2}
-                  borderColor="gray.300"
-                  borderWidth="1px"
-                  borderRadius="md"
-                >
-                  <option value="interval">Interval</option>
-                  <option value="quantile">Quantile</option>
-                </Select>
-                <Select
-                  value={numClusters}
-                  onChange={(e) => setNumClusters(Number(e.target.value))}
-                  width="120px"
-                  size="sm"
-                  bg="white"
-                  mr={2}
-                  borderColor="gray.300"
-                  borderWidth="1px"
-                  borderRadius="md"
-                >
-                  {[...Array(9)].map((_, i) => {
-                    const count = i + 2;
-                    return (
-                      <option key={count} value={count}>
-                        {count} Clusters
-                      </option>
-                    );
-                  })}
-                </Select>
-              </>
-            )}
-          <Select
-            value={colorField}
-            onChange={(e) => setColorField(e.target.value)}
-            width="200px"
-            size="sm"
-            bg="white"
-            borderColor="gray.300"
-            borderWidth="1px"
-            borderRadius="md"
-          >
-            {colorFieldOptions.map((field) => (
-              <option key={field} value={field}>
-                {field
-                  .replace(/_/g, " ")
-                  .replace(/\b\w/g, (l) => l.toUpperCase())}
-              </option>
-            ))}
-          </Select>
-        </Flex>
-      </Flex>
-      {/* Neighborhood radius slider (below controls, right-aligned, only visible after click) */}
-      {showRadiusSlider && (
-        <Flex justify="flex-end" align="center" mb={2}>
-          <Box bg="white" p={3} borderRadius="md" boxShadow="md" minW="220px">
-            <Text
-              fontSize="sm"
-              fontWeight="medium"
-              mb={2}
-              color="geneTerrain.primary"
+      {/* Main Plot Area */}
+      <Box flex={lassoRegions.length > 0 ? "1" : "1"} position="relative">
+        <Flex justify="space-between" align="center" mb={4}>
+          <Text fontSize="lg" fontWeight="medium" color="geneTerrain.primary">
+            Statistical Analysis Embeddings
+          </Text>
+          <Flex align="center">
+            {currentColumnType === "numeric" &&
+              numericSubtype === "continuous" && (
+                <>
+                  <Select
+                    value={clusterMethod}
+                    onChange={(e) => setClusterMethod(e.target.value as any)}
+                    width="120px"
+                    size="sm"
+                    bg="white"
+                    mr={2}
+                    borderColor="gray.300"
+                    borderWidth="1px"
+                    borderRadius="md"
+                  >
+                    <option value="interval">Interval</option>
+                    <option value="quantile">Quantile</option>
+                  </Select>
+                  <Select
+                    value={numClusters}
+                    onChange={(e) => setNumClusters(Number(e.target.value))}
+                    width="120px"
+                    size="sm"
+                    bg="white"
+                    mr={2}
+                    borderColor="gray.300"
+                    borderWidth="1px"
+                    borderRadius="md"
+                  >
+                    {[...Array(9)].map((_, i) => {
+                      const count = i + 2;
+                      return (
+                        <option key={count} value={count}>
+                          {count} Clusters
+                        </option>
+                      );
+                    })}
+                  </Select>
+                </>
+              )}
+            <Select
+              value={colorField}
+              onChange={(e) => setColorField(e.target.value)}
+              width="200px"
+              size="sm"
+              bg="white"
+              borderColor="gray.300"
+              borderWidth="1px"
+              borderRadius="md"
             >
-              Neighborhood Radius: {neighborhoodRadius.toFixed(2)}
+              {colorFieldOptions.map((field) => (
+                <option key={field} value={field}>
+                  {field
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                </option>
+              ))}
+            </Select>
+
+            {/* Controls to create Lasso from Visible */}
+            {((currentColumnType === "numeric" && numericSubtype === "discrete") ||
+              currentColumnType === "categorical") && (
+                <HStack spacing={2} ml={2}>
+                  {visibleTraceCount > 0 && visibleTraceCount < totalTraceCount && !hasCaptured && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      leftIcon={<MdFilterCenterFocus />}
+                      colorScheme="teal"
+                      borderColor="rgba(30,107,82,0.5)"
+                      color="rgba(30,107,82,1)"
+                      onClick={createLassoFromVisible}
+                      title="Capture currently visible samples as a lasso selection"
+                    >
+                      Capture
+                    </Button>
+                  )}
+                </HStack>
+              )}
+
+            {/* Compare button - visible when more than 1 lassos active */}
+            {/* {lassoRegions.length > 1 && (
+              <Button
+                ml={2}
+                size="sm"
+                colorScheme="green"
+                isLoading={isComparing}
+                loadingText="Preparing..."
+                onClick={handleShowComparison}
+              >
+                Compare Lassos
+              </Button>
+            )} */}
+          </Flex>
+        </Flex>
+        {/* Neighborhood radius slider (below controls, right-aligned, only visible after click) */}
+        {showRadiusSlider && (
+          <Flex justify="flex-end" align="center" mb={2}>
+            <Box bg="white" p={3} borderRadius="md" boxShadow="md" minW="220px">
+              <Text
+                fontSize="sm"
+                fontWeight="medium"
+                mb={2}
+                color="geneTerrain.primary"
+              >
+                Neighborhood Radius: {neighborhoodRadius.toFixed(2)}
+              </Text>
+              <Slider
+                min={0.5}
+                max={10}
+                step={0.1}
+                value={neighborhoodRadius}
+                onChange={setNeighborhoodRadius}
+                colorScheme="green"
+              >
+                <SliderTrack>
+                  <SliderFilledTrack />
+                </SliderTrack>
+                <SliderThumb />
+              </Slider>
+            </Box>
+          </Flex>
+        )}
+        <Plot
+          ref={plotRef}
+          data={plotlyData}
+          onClick={handlePointClick}
+          onSelected={handleLassoSelect}
+          // layout={baseLayout as Partial<Layout>}
+          layout={layoutWithShapes}
+
+          onInitialized={(_figure, graphDiv) => {
+            plotlyNodeRef.current = graphDiv;
+            checkTraceVisibility();
+          }}
+          onUpdate={(_figure, graphDiv) => {
+            plotlyNodeRef.current = graphDiv;
+            checkTraceVisibility();
+          }}
+          onRestyle={() => {
+            // Slight delay to ensure internal state update? Usually not needed but safe.
+            checkTraceVisibility();
+            // Reset capture state on restyle (visibility change)
+            setHasCaptured(false);
+          }}
+          config={{
+            responsive: true,
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ["pan2d", "autoScale2d", "toImage"],
+          }}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </Box>
+
+      {/* Side Panel for Lasso Selections */}
+      {lassoRegions.length > 0 && (
+        <VStack
+          w="280px"
+          bg="gray.50"
+          borderRadius="md"
+          p={4}
+          spacing={3}
+          align="stretch"
+          maxH="100%"
+          overflowY="auto"
+        >
+          <HStack justify="space-between" align="center">
+            <Text fontSize="md" fontWeight="bold" color="geneTerrain.primary">
+              Cohort Selections
             </Text>
-            <Slider
-              min={0.5}
-              max={10}
-              step={0.1}
-              value={neighborhoodRadius}
-              onChange={setNeighborhoodRadius}
-              colorScheme="green"
-            >
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb />
-            </Slider>
-          </Box>
-        </Flex>
+            <Badge colorScheme="green" borderRadius="full" px={2}>
+              {lassoRegions.length}
+            </Badge>
+          </HStack>
+
+          <Divider />
+
+          {lassoRegions.map((region, idx) => {
+            const lassoColors = [
+              { line: "rgba(30,107,82,0.95)", bg: "green.50", border: "green.500" },
+              { line: "rgba(255,127,14,0.95)", bg: "orange.50", border: "orange.500" },
+            ];
+            const colorScheme = lassoColors[idx % lassoColors.length];
+            const isFocused = focusedLassoId === region.id;
+
+            return (
+              <Box
+                key={region.id}
+                p={3}
+                bg={isFocused ? colorScheme.bg : "white"}
+                borderRadius="md"
+                borderWidth="2px"
+                borderColor={isFocused ? colorScheme.border : "gray.200"}
+                boxShadow="sm"
+                transition="all 0.2s"
+              >
+                <HStack justify="space-between" mb={2}>
+                  <VStack align="start" spacing={0} flex={1}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                      Cohort {idx + 1}
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">
+                      {region.selectedIds.length} sample{region.selectedIds.length !== 1 ? 's' : ''}
+                    </Text>
+                  </VStack>
+
+                  <HStack spacing={1}>
+                    <IconButton
+                      aria-label="Focus on selection"
+                      icon={<Icon as={MdCenterFocusStrong} />}
+                      size="sm"
+                      colorScheme="blue"
+                      variant="ghost"
+                      onClick={() => focusOnLasso(region.id)}
+                      title="Focus on this selection"
+                    />
+                    <IconButton
+                      aria-label="Remove selection"
+                      icon={<Icon as={MdClose} />}
+                      size="sm"
+                      colorScheme="red"
+                      variant="ghost"
+                      onClick={() => removeLasso(region.id)}
+                      title="Remove this selection"
+                    />
+                  </HStack>
+                </HStack>
+
+                {/* Color indicator */}
+                <Box
+                  h="3px"
+                  bg={colorScheme.border}
+                  borderRadius="full"
+                  mt={2}
+                />
+              </Box>
+            );
+          })}
+
+          <Divider mt={2} />
+
+          <Button
+            colorScheme="green"
+            size="md"
+            w="100%"
+            mt={2}
+            leftIcon={<Icon as={MdFilterCenterFocus} />}
+            onClick={handleShowComparison}
+            isDisabled={lassoRegions.length < 2}
+            isLoading={isComparing}
+            loadingText="Loading..."
+          >
+            Compare
+          </Button>
+
+          {lassoRegions.length < 2 && (
+            <Text fontSize="xs" color="gray.500" textAlign="center" mt={1}>
+              Select at least 2 regions to compare
+            </Text>
+          )}
+        </VStack>
       )}
-      <Plot
-        ref={plotRef}
-        data={plotlyData}
-        onClick={handlePointClick}
-        onSelected={handleLassoSelect}
-        layout={baseLayout as Partial<Layout>}
-        onInitialized={(_figure, graphDiv) => {
-          plotlyNodeRef.current = graphDiv;
-        }}
-        onUpdate={(_figure, graphDiv) => {
-          plotlyNodeRef.current = graphDiv;
-        }}
-        config={{
-          responsive: true,
-          displayModeBar: true,
-          displaylogo: false,
-          modeBarButtonsToRemove: ["pan2d", "autoScale2d", "toImage"],
-        }}
-        style={{ width: "100%", height: "100%" }}
-      />
-    </Box>
+    </Flex>
   );
 };
 

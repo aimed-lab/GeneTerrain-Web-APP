@@ -6,6 +6,7 @@ export interface Point {
   pathways: string[];
   description: string;
   value: number;
+  sampleValues?: number[];
 }
 
 export interface ViewportState {
@@ -65,6 +66,7 @@ export interface ComparisonSample {
   points: Sample["points"]; // The gene expression data points
   name: string; // Name of the visualization state
   datasetName: string; // Name of the dataset it belongs to
+  sampleIds?: string[]; // Optional: original cohort sample IDs for LassoComparisonPage
 }
 
 // Add this to your existing types if not already there

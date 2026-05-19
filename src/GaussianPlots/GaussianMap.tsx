@@ -88,6 +88,8 @@ interface GaussianMapProps {
   datasetId: string;
   sampleId: string;
   datasets: Dataset[];
+  minZoomForLabels?: number;
+  initialViewport?: { scale: number; offset: { x: number; y: number } };
 }
 
 const defaultViewport: ViewportState = {
@@ -97,11 +99,65 @@ const defaultViewport: ViewportState = {
   lastMousePos: null,
 };
 
+// Helper: Load and compile a shader
+export const loadShader = (
+  gl: WebGLRenderingContext,
+  type: number,
+  source: string
+) => {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(
+      "An error occurred compiling the shaders: " +
+      gl.getShaderInfoLog(shader)
+    );
+    gl.deleteShader(shader);
+    return null;
+  }
+
+  return shader;
+};
+
+// Helper: Initialize a shader program
+export const initShaderProgram = (
+  gl: WebGLRenderingContext,
+  vsSource: string,
+  fsSource: string
+) => {
+  const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+  const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  if (!vertexShader || !fragmentShader) return null;
+
+  const shaderProgram = gl.createProgram();
+  if (!shaderProgram) return null;
+
+  gl.attachShader(shaderProgram, vertexShader);
+  gl.attachShader(shaderProgram, fragmentShader);
+  gl.linkProgram(shaderProgram);
+
+  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+    console.error(
+      "Unable to initialize the shader program: " +
+      gl.getProgramInfoLog(shaderProgram)
+    );
+    return null;
+  }
+
+  return shaderProgram;
+};
+
 export function GaussianMap({
   points,
   datasetId,
   sampleId,
   datasets,
+  minZoomForLabels = MIN_ZOOM_FOR_LABELS,
+  initialViewport,
 }: GaussianMapProps) {
   const theme = useTheme();
 
@@ -111,11 +167,26 @@ export function GaussianMap({
   const programRef = useRef<WebGLProgram | null>(null);
   const prevSampleIdRef = useRef<string>(sampleId);
   const [isRegionPanelOpen, setIsRegionPanelOpen] = useState(false);
-const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
+  const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
 
+  // ===== OPTIMIZED: Persistent WebGL resources =====
+  type LayerType = "gaussian" | "discrete" | "water" | "sky";
+  const shaderProgramsRef = useRef<Record<LayerType, WebGLProgram | null>>({
+    gaussian: null,
+    discrete: null,
+    water: null,
+    sky: null,
+  });
+  const pointsTextureRef = useRef<WebGLTexture | null>(null);
+  const valuesTextureRef = useRef<WebGLTexture | null>(null);
+  const vertexBufferRef = useRef<WebGLBuffer | null>(null);
+  // ===== END OPTIMIZED =====
 
-
-  const [viewport, setViewport] = useState<ViewportState>(defaultViewport);
+  const [viewport, setViewport] = useState<ViewportState>(
+    initialViewport
+      ? { ...defaultViewport, scale: initialViewport.scale, offset: initialViewport.offset }
+      : defaultViewport
+  );
 
   const [popup, setPopup] = useState<PopupState>({
     visible: false,
@@ -145,8 +216,7 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
   // Summary panel toggle
   const [showSummaryPanel, setShowSummaryPanel] = useState(false);
 
-  // Layer type
-  type LayerType = "gaussian" | "discrete" | "water" | "sky";
+  // Layer type (LayerType defined earlier with refs)
   const [currentLayer, setCurrentLayer] = useState<LayerType>("gaussian");
 
   // Selected gene
@@ -270,62 +340,49 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
         return;
       }
       glRef.current = gl;
-      const program = initWebGLForContext(gl);
-      programRef.current = program;
+
+      // ===== OPTIMIZED: Initialize all resources here =====
+      // Create all 4 shader programs
+      const shaderMap: Record<LayerType, string> = {
+        gaussian: fragmentShader,
+        discrete: discreteFragmentShader,
+        water: waterFragmentShader,
+        sky: skyFragmentShader,
+      };
+
+      const layers: LayerType[] = ["gaussian", "discrete", "water", "sky"];
+      layers.forEach((layer) => {
+        const program = initShaderProgram(gl, vertexShader, shaderMap[layer]);
+        if (program) {
+          shaderProgramsRef.current[layer] = program;
+        }
+      });
+
+      // Initialize defaults for the legacy/fallback program (using gaussian)
+      const program = shaderProgramsRef.current.gaussian;
+      if (program) {
+        programRef.current = program; // Fallback
+
+        // Create persistent vertex buffer
+        const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+        vertexBufferRef.current = buffer;
+
+        // Also setup attributes for the legacy program reference in case it's used
+        const position = gl.getAttribLocation(program, "position");
+        gl.enableVertexAttribArray(position);
+        gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+      }
+
+      // Create persistent textures
+      pointsTextureRef.current = gl.createTexture();
+      valuesTextureRef.current = gl.createTexture();
+      // ===== END OPTIMIZED =====
     },
-    [initWebGLForContext]
+    [] // No dependencies needed since helpers are static
   );
-
-  const loadShader = (
-    gl: WebGLRenderingContext,
-    type: number,
-    source: string
-  ) => {
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error(
-        "An error occurred compiling the shaders: " +
-          gl.getShaderInfoLog(shader)
-      );
-      gl.deleteShader(shader);
-      return null;
-    }
-
-    return shader;
-  };
-
-  // Create shader programs dynamically
-  const initShaderProgram = (
-    gl: WebGLRenderingContext,
-    vsSource: string,
-    fsSource: string
-  ) => {
-    const v = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const f = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-    if (!v || !f) return null;
-
-    const shaderProgram = gl.createProgram();
-    if (!shaderProgram) return null;
-
-    gl.attachShader(shaderProgram, v);
-    gl.attachShader(shaderProgram, f);
-    gl.linkProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-      console.error(
-        "Unable to initialize the shader program: " +
-          gl.getProgramInfoLog(shaderProgram)
-      );
-      return null;
-    }
-
-    return shaderProgram;
-  };
 
   // Draw sample (WebGL)
   const drawSample = useCallback(
@@ -337,10 +394,10 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
     ) => {
       gl.useProgram(program);
       if (samplePoints.length === 0) {
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-  return;
-}
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        return;
+      }
 
 
       const themeColors = {
@@ -394,7 +451,12 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
         valuesData[i * 4 + 3] = 0;
       }
 
-      const pointsTexture = gl.createTexture();
+      // ===== OPTIMIZED: Use persistent textures =====
+      const pointsTexture = pointsTextureRef.current;
+      const valuesTexture = valuesTextureRef.current;
+
+      if (!pointsTexture || !valuesTexture) return;
+
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, pointsTexture);
 
@@ -447,7 +509,6 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-      const valuesTexture = gl.createTexture();
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, valuesTexture);
 
@@ -523,9 +584,7 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
       }
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-      gl.deleteTexture(pointsTexture);
-      gl.deleteTexture(valuesTexture);
+      // ===== END OPTIMIZED (Textures are persistent, no deletion) =====
     },
     [theme, lineThickness, isolineSpacing, currentLayer]
   );
@@ -534,10 +593,14 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
   const draw = useCallback(() => {
     const gl = glRef.current;
     const overlayCanvas = overlayCanvasRef.current;
-    if (!gl || !overlayCanvas) return;
+    if (!gl || !overlayCanvas) {
+      return;
+    }
 
     const ctx = overlayCanvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     // const pointsToShow =
     //   lasso.active || lasso.regions.length === 0
@@ -557,27 +620,12 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    let selectedShader;
-    switch (currentLayer) {
-      case "gaussian":
-        selectedShader = fragmentShader;
-        break;
-      case "discrete":
-        selectedShader = discreteFragmentShader;
-        break;
-      case "water":
-        selectedShader = waterFragmentShader;
-        break;
-      case "sky":
-        selectedShader = skyFragmentShader;
-        break;
-    }
-
-    const program = initShaderProgram(gl, vertexShader, selectedShader);
+    // ===== OPTIMIZED: Use cached shader program =====
+    const program = shaderProgramsRef.current[currentLayer];
     if (program) {
       drawSample(gl, program, pointsToShow, viewport);
-      gl.deleteProgram(program);
     }
+    // ===== END OPTIMIZED =====
 
     // Draw lasso regions
     ctx.setTransform(
@@ -601,9 +649,8 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
       ctx.lineWidth = (isHovered ? 2.5 : 1) / viewport.scale;
       ctx.stroke();
 
-      ctx.fillStyle = `${theme.colors?.geneTerrain?.primary || "#1E6B52"}${
-        isHovered ? "35" : "20"
-      }`;
+      ctx.fillStyle = `${theme.colors?.geneTerrain?.primary || "#1E6B52"}${isHovered ? "35" : "20"
+        }`;
       ctx.fill();
     });
 
@@ -618,7 +665,7 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
     }
 
     // Labels (your existing logic)
-    if (viewport.scale >= MIN_ZOOM_FOR_LABELS) {
+    if (viewport.scale >= minZoomForLabels) {
       let percentileThreshold;
       if (viewport.scale >= ZOOM_THRESHOLDS.veryhigh) {
         percentileThreshold = PERCENTILE_PER_ZOOM_LEVEL.veryhigh;
@@ -742,7 +789,7 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
 
       const startScale = viewport.scale;
       const startOffset = { ...viewport.offset };
-      const targetScale = Math.min(10, Math.max(6.5, startScale * extraZoom));
+      const targetScale = Math.min(50, Math.max(6.5, startScale * extraZoom));
 
       setLasso((prev) => ({ ...prev, selectedGenes: new Set([gene.geneId]) }));
 
@@ -822,6 +869,35 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
   useEffect(() => {
     const canvas = glCanvasRef.current;
     if (canvas) initWebGL(canvas);
+
+    return () => {
+      const gl = glRef.current;
+      if (!gl) return;
+
+      // Cleanup persistent resources
+      if (pointsTextureRef.current) {
+        gl.deleteTexture(pointsTextureRef.current);
+        pointsTextureRef.current = null;
+      }
+      if (valuesTextureRef.current) {
+        gl.deleteTexture(valuesTextureRef.current);
+        valuesTextureRef.current = null;
+      }
+      if (vertexBufferRef.current) {
+        gl.deleteBuffer(vertexBufferRef.current);
+        vertexBufferRef.current = null;
+      }
+
+      Object.values(shaderProgramsRef.current).forEach(program => {
+        if (program) gl.deleteProgram(program);
+      });
+      shaderProgramsRef.current = {
+        gaussian: null,
+        discrete: null,
+        water: null,
+        sky: null,
+      };
+    };
   }, [initWebGL]);
 
   useEffect(() => {
@@ -879,14 +955,16 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
       e.stopPropagation();
 
       const rect = overlayCanvasRef.current?.getBoundingClientRect();
-      if (!rect) return;
+      if (!rect) {
+        return;
+      }
 
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
 
       setViewport((prev) => {
-        const newScale = Math.max(0.1, Math.min(10, prev.scale * scaleFactor));
+        const newScale = Math.max(0.1, Math.min(50, prev.scale * scaleFactor));
         const dx = mouseX - prev.offset.x;
         const dy = mouseY - prev.offset.y;
         const newViewport = {
@@ -900,22 +978,24 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
 
         requestAnimationFrame(() => {
           const gl = glRef.current;
-          const program = programRef.current;
+          // ===== OPTIMIZED: Use correct cached shader program for current layer =====
+          const program = shaderProgramsRef.current[currentLayer];
           if (gl && program) {
             gl.viewport(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
             drawSample(gl, program, filteredPoints, newViewport);
           }
+          // ===== END OPTIMIZED =====
         });
 
         return newViewport;
       });
     },
-    [drawSample, filteredPoints]
+    [drawSample, filteredPoints, currentLayer]
   );
 
-    useEffect(() => {
+  useEffect(() => {
     if (prevSampleIdRef.current !== sampleId) {
       // Calculate center of points to center the view
       if (points.length > 0) {
@@ -969,7 +1049,7 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
     }
   }, [handleWheel]);
 
-    // Center viewport on initial load
+  // Center viewport on initial load
   const viewportInitializedRef = useRef(false);
   useEffect(() => {
     if (!viewportInitializedRef.current && points.length > 0 && overlayCanvasRef.current) {
@@ -999,73 +1079,73 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
   }, [points]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-  cancelFocusAnimation();
+    cancelFocusAnimation();
 
-  const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
+    const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
 
-  // =========================
-  // LASSO MODE (active)
-  // =========================
-  if (lasso.active) {
-    // If user clicks inside an existing region -> open the left panel
-    // (Do NOT start drawing a new region)
-    if (lasso.regions.length > 0 && !isDrawingLasso) {
-      const hitIdx = getHoveredRegionIndex(worldX, worldY);
-      if (hitIdx !== null) {
-        setActiveRegionIndex(hitIdx);
-        setIsRegionPanelOpen(true);
+    // =========================
+    // LASSO MODE (active)
+    // =========================
+    if (lasso.active) {
+      // If user clicks inside an existing region -> open the left panel
+      // (Do NOT start drawing a new region)
+      if (lasso.regions.length > 0 && !isDrawingLasso) {
+        const hitIdx = getHoveredRegionIndex(worldX, worldY);
+        if (hitIdx !== null) {
+          setActiveRegionIndex(hitIdx);
+          setIsRegionPanelOpen(true);
 
-        // Optional: focus selection on this region only
-        const ids = regionStats[hitIdx]?.geneIds ?? [];
-        setLasso((prev) => ({ ...prev, selectedGenes: new Set(ids) }));
+          // Optional: focus selection on this region only
+          const ids = regionStats[hitIdx]?.geneIds ?? [];
+          setLasso((prev) => ({ ...prev, selectedGenes: new Set(ids) }));
 
-        return;
+          return;
+        }
       }
+
+      // Otherwise, start drawing a new lasso region
+      setIsDrawingLasso(true);
+      setLasso((prev) => ({
+        ...prev,
+        currentRegion: [
+          {
+            x: worldX,
+            y: worldY,
+            geneId: "",
+            geneName: "",
+            pathways: [],
+            description: "",
+            value: 0,
+          },
+        ],
+      }));
+      return;
     }
 
-    // Otherwise, start drawing a new lasso region
-    setIsDrawingLasso(true);
-    setLasso((prev) => ({
+    // =========================
+    // NORMAL MODE (lasso inactive)
+    // =========================
+    const clickedPoint = filteredPoints.find((point) =>
+      isPointInCircle(worldX, worldY, point.x, point.y, POINT_RADIUS * 2)
+    );
+
+    // If user clicked a gene point -> open gene popup
+    if (clickedPoint) {
+      setPopup({
+        visible: true,
+        point: clickedPoint,
+        position: { x: e.clientX, y: e.clientY },
+      });
+      return;
+    }
+
+    // Otherwise -> start dragging the viewport
+    setViewport((prev) => ({
       ...prev,
-      currentRegion: [
-        {
-          x: worldX,
-          y: worldY,
-          geneId: "",
-          geneName: "",
-          pathways: [],
-          description: "",
-          value: 0,
-        },
-      ],
+      dragging: true,
+      lastMousePos: { x: e.clientX, y: e.clientY },
     }));
-    return;
-  }
-
-  // =========================
-  // NORMAL MODE (lasso inactive)
-  // =========================
-  const clickedPoint = filteredPoints.find((point) =>
-    isPointInCircle(worldX, worldY, point.x, point.y, POINT_RADIUS * 2)
-  );
-
-  // If user clicked a gene point -> open gene popup
-  if (clickedPoint) {
-    setPopup({
-      visible: true,
-      point: clickedPoint,
-      position: { x: e.clientX, y: e.clientY },
-    });
-    return;
-  }
-
-  // Otherwise -> start dragging the viewport
-  setViewport((prev) => ({
-    ...prev,
-    dragging: true,
-    lastMousePos: { x: e.clientX, y: e.clientY },
-  }));
-};
+  };
 
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -1108,28 +1188,28 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
         lastMousePos: { x: e.clientX, y: e.clientY },
       }));
     } else {
-  // ✅ Allow hover tooltip even when lasso is active
-  // ❌ But do NOT update hover while actively drawing a new region
-  if (isDrawingLasso || lasso.regions.length === 0) {
-    if (hoveredRegionIndex !== null) setHoveredRegionIndex(null);
-    if (hoverPos !== null) setHoverPos(null);
-    return;
-  }
+      // ✅ Allow hover tooltip even when lasso is active
+      // ❌ But do NOT update hover while actively drawing a new region
+      if (isDrawingLasso || lasso.regions.length === 0) {
+        if (hoveredRegionIndex !== null) setHoveredRegionIndex(null);
+        if (hoverPos !== null) setHoverPos(null);
+        return;
+      }
 
-  const rect = overlayCanvasRef.current?.getBoundingClientRect();
-  if (!rect) return;
+      const rect = overlayCanvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-  const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
-  const idx = getHoveredRegionIndex(worldX, worldY);
+      const { worldX, worldY } = getMouseWorldCoords(e.clientX, e.clientY);
+      const idx = getHoveredRegionIndex(worldX, worldY);
 
-  if (idx !== hoveredRegionIndex) setHoveredRegionIndex(idx);
+      if (idx !== hoveredRegionIndex) setHoveredRegionIndex(idx);
 
-  if (idx !== null) {
-    setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  } else {
-    if (hoverPos !== null) setHoverPos(null);
-  }
-}
+      if (idx !== null) {
+        setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      } else {
+        if (hoverPos !== null) setHoverPos(null);
+      }
+    }
 
   };
 
@@ -1371,27 +1451,27 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
         </div>
 
         {/* ✅ NEW: Hover Card (clickable + shows only when hovering a region) */}
-{hoveredRegionIndex !== null && hoverPos && !isDrawingLasso && (
-  <div
-    style={{
-      position: "absolute",
-      left: `${clamp(hoverPos.x + 12, 8, CANVAS_WIDTH - 120)}px`,
-      top: `${clamp(hoverPos.y + 12, 8, CANVAS_HEIGHT - 36)}px`,
-      zIndex: 2000,
-      pointerEvents: "none",
-      background: "rgba(0,0,0,0.78)",
-      color: "#fff",
-      padding: "6px 8px",
-      borderRadius: 8,
-      fontSize: 12,
-      fontWeight: 600,
-      boxShadow: "0 10px 26px rgba(0,0,0,0.18)",
-      whiteSpace: "nowrap",
-    }}
-  >
-    {(regionStats[hoveredRegionIndex]?.count ?? 0)} genes
-  </div>
-)}
+        {hoveredRegionIndex !== null && hoverPos && !isDrawingLasso && (
+          <div
+            style={{
+              position: "absolute",
+              left: `${clamp(hoverPos.x + 12, 8, CANVAS_WIDTH - 120)}px`,
+              top: `${clamp(hoverPos.y + 12, 8, CANVAS_HEIGHT - 36)}px`,
+              zIndex: 2000,
+              pointerEvents: "none",
+              background: "rgba(0,0,0,0.78)",
+              color: "#fff",
+              padding: "6px 8px",
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              boxShadow: "0 10px 26px rgba(0,0,0,0.18)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {(regionStats[hoveredRegionIndex]?.count ?? 0)} genes
+          </div>
+        )}
 
 
         {/* Gene popup panel */}
@@ -1453,9 +1533,8 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
                   key={layer.id}
                   className="border-bottom"
                   style={{
-                    borderColor: `${
-                      theme.colors?.geneTerrain?.neutral || "#d1d5db"
-                    }20`,
+                    borderColor: `${theme.colors?.geneTerrain?.neutral || "#d1d5db"
+                      }20`,
                   }}
                 >
                   <button
@@ -1482,9 +1561,8 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
-                            border: `1px solid ${
-                              theme.colors?.geneTerrain?.border || "#E2E8F0"
-                            }`,
+                            border: `1px solid ${theme.colors?.geneTerrain?.border || "#E2E8F0"
+                              }`,
                             borderRadius: "4px",
                           }}
                         />
@@ -1732,9 +1810,8 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
           {/* Lasso button */}
           <button
             onClick={toggleLasso}
-            className={`btn btn-lg rounded-circle shadow ${
-              lasso.active ? "btn-primary" : "btn-light"
-            }`}
+            className={`btn btn-lg rounded-circle shadow ${lasso.active ? "btn-primary" : "btn-light"
+              }`}
             title={lasso.active ? "Complete selection" : "Start lasso selection"}
           >
             <Lasso color="#4B5563" className="w-6 h-6" />
@@ -1848,19 +1925,19 @@ const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
       )}
 
       <LassoRegionPanel
-  isOpen={isRegionPanelOpen}
-  title={
-    activeRegionIndex !== null
-      ? (lasso.regions[activeRegionIndex]?.label ??
-          `Selection ${activeRegionIndex + 1}`)
-      : "Selection"
-  }
-  onClose={() => setIsRegionPanelOpen(false)}
-  activeRegionIndex={activeRegionIndex}
-  regions={lasso.regions}
-  filteredPoints={filteredPoints}
-  datasetId={datasetId}
-/>
+        isOpen={isRegionPanelOpen}
+        title={
+          activeRegionIndex !== null
+            ? (lasso.regions[activeRegionIndex]?.label ??
+              `Selection ${activeRegionIndex + 1}`)
+            : "Selection"
+        }
+        onClose={() => setIsRegionPanelOpen(false)}
+        activeRegionIndex={activeRegionIndex}
+        regions={lasso.regions}
+        filteredPoints={filteredPoints}
+        datasetId={datasetId}
+      />
 
 
     </div>

@@ -163,19 +163,9 @@ const Navbar: React.FC = () => {
                     bg: "geneTerrain.secondary",
                     color: "geneTerrain.bg",
                   }}
-                  onClick={() => navigate("/profile")}
+                  onClick={() => navigate("/analytics")}
                 >
-                  Profile
-                </MenuItem>
-                <MenuItem
-                  bg="geneTerrain.bg"
-                  _hover={{
-                    bg: "geneTerrain.secondary",
-                    color: "geneTerrain.bg",
-                  }}
-                  onClick={() => navigate("/dashboard")}
-                >
-                  Dashboard
+                  Analytics
                 </MenuItem>
                 <MenuItem
                   bg="geneTerrain.bg"

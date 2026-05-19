@@ -163,31 +163,31 @@ const GeneVisualization: React.FC = () => {
           datasetName={selectedDataset?.name || "Unknown Dataset"}
           visualizeTrigger={visualizeTrigger}
         />
-            <Button
-              size="sm"
-              mt={2}
-              variant="outline"
-              colorScheme="teal"
-              onClick={() => setShowTable((s) => !s)}
-              backgroundColor={showTable ?  undefined: "#1E6B52"}
-              textColor={showTable ?  undefined: "white"}
-              _hover={
-                showTable
-                  ? { backgroundColor: "#ecf4f0ff" }
-                  : { backgroundColor: "#2c9b6cff" }
-              }
-            >
-              {showTable ? "Hide Tabular Data" : "Show Tabular Data"}
-            </Button>
-            {/*collapsible area renders GeneDataGrid */}
-            <Collapse in={showTable} animateOpacity>
-              <Box mt={3}>
-                <GeneDataGrid 
-                data={points}
-                datasetId={selectedDataset?.id || ""}
-                />
-              </Box>
-            </Collapse>
+        <Button
+          size="sm"
+          mt={2}
+          variant="outline"
+          colorScheme="teal"
+          onClick={() => setShowTable((s) => !s)}
+          backgroundColor={showTable ? undefined : "#1E6B52"}
+          textColor={showTable ? undefined : "white"}
+          _hover={
+            showTable
+              ? { backgroundColor: "#ecf4f0ff" }
+              : { backgroundColor: "#2c9b6cff" }
+          }
+        >
+          {showTable ? "Hide Tabular Data" : "Show Tabular Data"}
+        </Button>
+        {/*collapsible area renders GeneDataGrid */}
+        <Collapse in={showTable} animateOpacity>
+          <Box mt={3}>
+            <GeneDataGrid
+              data={points}
+              datasetId={selectedDataset?.id || ""}
+            />
+          </Box>
+        </Collapse>
 
         <Box
           position="relative"

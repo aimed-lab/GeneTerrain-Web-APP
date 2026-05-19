@@ -522,19 +522,17 @@ export function VisualizationHistory({
                 <div className="d-flex gap-2">
                   <button
                     onClick={() => setCurrentDatasetOnly(!currentDatasetOnly)}
-                    className={`btn ${
-                      currentDatasetOnly
+                    className={`btn ${currentDatasetOnly
                         ? "btn-primary"
                         : "btn-outline-secondary"
-                    }`}
+                      }`}
                   >
                     {currentDatasetOnly ? "Current Dataset" : "Current Sample"}
                   </button>
                   <button
                     onClick={() => setShowAllHistory(!showAllHistory)}
-                    className={`btn ${
-                      showAllHistory ? "btn-primary" : "btn-outline-secondary"
-                    }`}
+                    className={`btn ${showAllHistory ? "btn-primary" : "btn-outline-secondary"
+                      }`}
                   >
                     {showAllHistory ? "Show Current Only" : "Show All States"}
                   </button>
@@ -555,10 +553,10 @@ export function VisualizationHistory({
                   {searchTerm
                     ? "No states match your search"
                     : showAllHistory
-                    ? "No saved states found"
-                    : currentDatasetOnly
-                    ? "No saved states found for this dataset"
-                    : "No saved states found for this sample"}
+                      ? "No saved states found"
+                      : currentDatasetOnly
+                        ? "No saved states found for this dataset"
+                        : "No saved states found for this sample"}
                 </p>
               ) : (
                 <div className="overflow-auto" style={{ maxHeight: "24rem" }}>
@@ -577,10 +575,10 @@ export function VisualizationHistory({
                           backgroundColor: isSelected
                             ? "rgba(128, 188, 0, 0.1)"
                             : isSameDataset
-                            ? entry.sample_id === sampleId
-                              ? "rgba(128, 188, 0, 0.1)"
-                              : "rgba(30, 107, 82, 0.1)"
-                            : "#FFFFFF",
+                              ? entry.sample_id === sampleId
+                                ? "rgba(128, 188, 0, 0.1)"
+                                : "rgba(30, 107, 82, 0.1)"
+                              : "#FFFFFF",
                           border: "1px solid #E2E8F0",
                         }}
                       >
@@ -606,8 +604,8 @@ export function VisualizationHistory({
                               isSelected
                                 ? "Remove from comparison"
                                 : canSelect
-                                ? "Add to comparison"
-                                : "Maximum 5 samples for comparison"
+                                  ? "Add to comparison"
+                                  : "Maximum 5 samples for comparison"
                             }
                           >
                             {isSelected ? (

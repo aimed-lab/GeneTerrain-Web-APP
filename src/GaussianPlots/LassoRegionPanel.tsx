@@ -16,6 +16,11 @@ import { DataSet, Network, Options } from "vis-network/standalone";
 import UnifiedPathwayNetwork from "../components/common/UnifiedPathwayNetwork";
 import KnowledgeGraph from "../components/common/KnowledgeGraph";
 import { createPortal } from "react-dom";
+import {
+  Grid3X3,
+  ArrowUpRight,
+  LayoutList
+} from "lucide-react";
 
 
 // ────────────────────────────────────────────────────────────
@@ -122,8 +127,8 @@ async function runEnrichr(genes: string[], library = ENRICHR_LIBRARY): Promise<E
     const overlapArr = Array.isArray(overlapRaw)
       ? overlapRaw.filter(Boolean)
       : (typeof overlapRaw === "string"
-          ? overlapRaw.split(/[;,\s/]+/).filter(Boolean)
-          : []);
+        ? overlapRaw.split(/[;,\s/]+/).filter(Boolean)
+        : []);
 
     const fdrNegLog10 = adjP > 0 ? +(-Math.log10(adjP)).toFixed(2) : 0;
 
@@ -295,30 +300,30 @@ function LollipopMini({ data }: { data: EnrichrRow[] }) {
 
   // Custom Y tick that wraps nicely on wide screens
   // Single-line truncated tick + hover shows full text
-const renderYTick = (props: any) => {
-  const { x, y, payload } = props;
+  const renderYTick = (props: any) => {
+    const { x, y, payload } = props;
 
-  const full = cleanDescription(String(payload?.value ?? "")); // full name for hover
-  const maxChars = compact ? 16 : 24; // show only a small portion
-  const short =
-    full.length > maxChars ? full.slice(0, Math.max(0, maxChars - 1)) + "…" : full;
+    const full = cleanDescription(String(payload?.value ?? "")); // full name for hover
+    const maxChars = compact ? 16 : 24; // show only a small portion
+    const short =
+      full.length > maxChars ? full.slice(0, Math.max(0, maxChars - 1)) + "…" : full;
 
-    
-  return (
-    <text
-      x={x - 6}
-      y={y}
-      textAnchor="end"
-      dominantBaseline="central"
-      fill="#2d3748"
-      fontSize={compact ? 11 : 12}
+
+    return (
+      <text
+        x={x - 6}
+        y={y}
+        textAnchor="end"
+        dominantBaseline="central"
+        fill="#2d3748"
+        fontSize={compact ? 11 : 12}
       // style={{ cursor: "help" }}
-    >
-      <title>{full}</title>
-      {short}
-    </text>
-  );
-};
+      >
+        <title>{full}</title>
+        {short}
+      </text>
+    );
+  };
 
 
   return (
@@ -333,12 +338,12 @@ const renderYTick = (props: any) => {
     >
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
-  layout="vertical"
-  data={rows}
-  margin={{ top: 10, right: 16, bottom: 10, left: compact ? 4 : 10 }}
-  barCategoryGap={compact ? "18%" : "8%"}
-  barGap={0}
->
+          layout="vertical"
+          data={rows}
+          margin={{ top: 10, right: 16, bottom: 10, left: compact ? 4 : 10 }}
+          barCategoryGap={compact ? "18%" : "8%"}
+          barGap={0}
+        >
 
           <CartesianGrid stroke="#e2e8f0" horizontal={false} />
           <XAxis
@@ -347,11 +352,11 @@ const renderYTick = (props: any) => {
             tick={{ fill: "#4a5568", fontSize: compact ? 11 : 12 }}
           />
           <YAxis
-  dataKey="category"
-  type="category"
-  width={compact ? 110 : 150}   // ✅ smaller so bars have room
-  tick={renderYTick}            // ✅ truncated + hover full
-/>
+            dataKey="category"
+            type="category"
+            width={compact ? 110 : 150}   // ✅ smaller so bars have room
+            tick={renderYTick}            // ✅ truncated + hover full
+          />
 
 
           <Bar dataKey="fold" barSize={compact ? 12 : 8} radius={[2, 2, 2, 2]}>
@@ -371,11 +376,11 @@ const renderYTick = (props: any) => {
             }}
           />
 
-<ReTooltip
-  content={(props) => (
-    <PortalTooltip {...props} hostRef={hostRef} compact={compact} />
-  )}
-/>        </ComposedChart>
+          <ReTooltip
+            content={(props) => (
+              <PortalTooltip {...props} hostRef={hostRef} compact={compact} />
+            )}
+          />        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
@@ -662,64 +667,64 @@ function NetworkMiniPaths({
   // ✅ Portal tooltip (same vibe as Pathways tab)
   const tooltipPortal =
     tooltip &&
-    typeof window !== "undefined" &&
-    typeof document !== "undefined"
+      typeof window !== "undefined" &&
+      typeof document !== "undefined"
       ? (() => {
-          const maxW = 360;
+        const maxW = 360;
 
-          const leftRaw = tooltip.x + 12;
-          const topRaw = tooltip.y - 10;
+        const leftRaw = tooltip.x + 12;
+        const topRaw = tooltip.y - 10;
 
-          const left = Math.min(Math.max(8, leftRaw), window.innerWidth - maxW - 8);
-          const top = Math.min(Math.max(8, topRaw), window.innerHeight - 140);
+        const left = Math.min(Math.max(8, leftRaw), window.innerWidth - maxW - 8);
+        const top = Math.min(Math.max(8, topRaw), window.innerHeight - 140);
 
-          const title = cleanDescription(String(tooltip.row.category ?? ""));
+        const title = cleanDescription(String(tooltip.row.category ?? ""));
 
-          return createPortal(
+        return createPortal(
+          <div
+            style={{
+              position: "fixed",
+              left,
+              top,
+              transform: "translateY(-100%)",
+              zIndex: 50000,
+              maxWidth: maxW,
+              background: "rgba(15, 23, 42, 0.92)",
+              color: "white",
+              borderRadius: 10,
+              padding: "10px 12px",
+              fontSize: 12,
+              lineHeight: 1.35,
+              pointerEvents: "none",
+              boxShadow: "0 12px 28px rgba(0,0,0,0.25)",
+              whiteSpace: "normal",
+            }}
+          >
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>{title}</div>
+
             <div
               style={{
-                position: "fixed",
-                left,
-                top,
-                transform: "translateY(-100%)",
-                zIndex: 50000,
-                maxWidth: maxW,
-                background: "rgba(15, 23, 42, 0.92)",
-                color: "white",
-                borderRadius: 10,
-                padding: "10px 12px",
-                fontSize: 12,
-                lineHeight: 1.35,
-                pointerEvents: "none",
-                boxShadow: "0 12px 28px rgba(0,0,0,0.25)",
-                whiteSpace: "normal",
+                display: "grid",
+                gridTemplateColumns: "auto auto",
+                columnGap: 10,
+                rowGap: 2,
+                fontVariantNumeric: "tabular-nums",
+                opacity: 0.95,
               }}
             >
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>{title}</div>
+              <div style={{ opacity: 0.75 }}>-log10(FDR)</div>
+              <div>{tooltip.row.fdr ?? "-"}</div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto auto",
-                  columnGap: 10,
-                  rowGap: 2,
-                  fontVariantNumeric: "tabular-nums",
-                  opacity: 0.95,
-                }}
-              >
-                <div style={{ opacity: 0.75 }}>-log10(FDR)</div>
-                <div>{tooltip.row.fdr ?? "-"}</div>
+              <div style={{ opacity: 0.75 }}>Combined</div>
+              <div>{tooltip.row.fold ?? "-"}</div>
 
-                <div style={{ opacity: 0.75 }}>Combined</div>
-                <div>{tooltip.row.fold ?? "-"}</div>
-
-                <div style={{ opacity: 0.75 }}>Genes</div>
-                <div>{tooltip.row.genes ?? "-"}</div>
-              </div>
-            </div>,
-            document.body
-          );
-        })()
+              <div style={{ opacity: 0.75 }}>Genes</div>
+              <div>{tooltip.row.genes ?? "-"}</div>
+            </div>
+          </div>,
+          document.body
+        );
+      })()
       : null;
 
   return (
@@ -844,14 +849,46 @@ function RegionCard({
   return (
     <div className="card mb-1 border" style={{ backgroundColor: "white", borderColor: "#E2E8F0" }}>
       <div className="card-header py-2" style={{ backgroundColor: "#F7FAFC", borderBottom: "1px solid #E2E8F0" }}>
-        <h4 className="h6 mb-0 d-flex justify-content-between" style={{ color: "#333333" }}>
+        <h4 className="h6 mb-0 d-flex justify-content-between align-items-center" style={{ color: "#333333" }}>
           <span>
-            <i className="bi bi-grid-3x3 me-1"></i>
+            <Grid3X3 className="me-1 d-inline" size={16} />
             {region.label}
           </span>
-          <span className="badge" style={{ backgroundColor: "#80BC00", color: "white" }}>
-            {genesInRegion.length} genes
-          </span>
+          <div className="d-flex align-items-center gap-2">
+            <button
+              className="btn btn-sm p-1 d-flex align-items-center justify-content-center"
+              style={{
+                backgroundColor: "#fff",
+                border: "1px solid #E2E8F0",
+                borderRadius: "4px",
+                color: "#1E6B52"
+              }}
+              title="Open Summary"
+              onClick={() => {
+                const geneList = uniq(genesInRegion.map(g => g.geneName).filter(Boolean) as string[]);
+                try {
+                  localStorage.setItem(
+                    "SELECTION_SUMMARY_DATA",
+                    JSON.stringify({
+                      genes: geneList,
+                      datasetId,
+                      regionLabel: region.label,
+                      at: Date.now()
+                    })
+                  );
+                  window.open("/selection-summary", "_blank", "noopener,noreferrer");
+                } catch (e) {
+                  console.error("Failed to store selection summary data", e);
+                }
+              }}
+            >
+              <LayoutList size={14} />
+              <span className="ms-1" style={{ fontSize: "12px", fontWeight: 600 }}>Summary</span>
+            </button>
+            <span className="badge" style={{ backgroundColor: "#80BC00", color: "white" }}>
+              {genesInRegion.length} genes
+            </span>
+          </div>
         </h4>
       </div>
 
@@ -950,184 +987,184 @@ function RegionCard({
               return (
                 <div style={{ maxHeight: 460, overflowY: "auto", paddingRight: 6 }}>
                   {items.map((gene, i) => {
-  const v = gene.value ?? 0;
-  const ratio = clamp01(Math.abs(v) / MAX_ABS);
-  const isPositive = v >= 0;
+                    const v = gene.value ?? 0;
+                    const ratio = clamp01(Math.abs(v) / MAX_ABS);
+                    const isPositive = v >= 0;
 
-  const negWidthPct = isPositive ? 0 : Math.round(ratio * 100);
-  const posWidthPct = isPositive ? Math.round(ratio * 100) : 0;
-  const color = isPositive ? "#d13a3aff" : "#3182CE";
+                    const negWidthPct = isPositive ? 0 : Math.round(ratio * 100);
+                    const posWidthPct = isPositive ? Math.round(ratio * 100) : 0;
+                    const color = isPositive ? "#d13a3aff" : "#3182CE";
 
-  const showThisError = canShowAnyError && Math.abs(v) > EPS;
-  let lo = v, hi = v;
-  if (showThisError) {
-    if (isPositive) { lo = v; hi = v + ciMag; }
-    else { lo = v - ciMag; hi = v; }
-  }
-  const pctStart = toPct(Math.min(lo, hi));
-  const pctEnd = toPct(Math.max(lo, hi));
-  const widthPct = Math.max(0, pctEnd - pctStart);
+                    const showThisError = canShowAnyError && Math.abs(v) > EPS;
+                    let lo = v, hi = v;
+                    if (showThisError) {
+                      if (isPositive) { lo = v; hi = v + ciMag; }
+                      else { lo = v - ciMag; hi = v; }
+                    }
+                    const pctStart = toPct(Math.min(lo, hi));
+                    const pctEnd = toPct(Math.max(lo, hi));
+                    const widthPct = Math.max(0, pctEnd - pctStart);
 
-  return (
-  <div
-    key={i}
-    style={{
-      paddingBottom: 10,
-      // marginBottom: 10,
-      // borderBottom: "1px dashed #E2E8F0",
-    }}
-  >
-    {/* Gene label + Bar side-by-side */}
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "60px 1fr", // label | bar area
-        gap: 10,
-        alignItems: "start",
-      }}
-    >
-      {/* Gene name (left) */}
-      <div
-        style={{
-          minWidth: 0,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          color: "#333",
-          fontWeight: 600,
-          lineHeight: "18px",
-          paddingTop: 1, // small alignment tweak
-        }}
-        title={gene.geneName}
-      >
-        {gene.geneName}
-      </div>
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          paddingBottom: 10,
+                          // marginBottom: 10,
+                          // borderBottom: "1px dashed #E2E8F0",
+                        }}
+                      >
+                        {/* Gene label + Bar side-by-side */}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "60px 1fr", // label | bar area
+                            gap: 10,
+                            alignItems: "start",
+                          }}
+                        >
+                          {/* Gene name (left) */}
+                          <div
+                            style={{
+                              minWidth: 0,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              color: "#333",
+                              fontWeight: 600,
+                              lineHeight: "18px",
+                              paddingTop: 1, // small alignment tweak
+                            }}
+                            title={gene.geneName}
+                          >
+                            {gene.geneName}
+                          </div>
 
-      {/* Bar + numbers (right) */}
-      <div style={{ minWidth: 0 }}>
-        {/* Bar */}
-        <div
-          style={{
-            position: "relative",
-            height: 12, // keeps bar visible
-            background: "#F1F5F9",
-            borderRadius: 6,
-            overflow: "hidden",
-            border: "1px solid #E2E8F0",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-          }}
-        >
-          {/* Center line */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: 0,
-              bottom: 0,
-              width: 1,
-              background: "#CBD5E1",
-              zIndex: 2,
-            }}
-          />
+                          {/* Bar + numbers (right) */}
+                          <div style={{ minWidth: 0 }}>
+                            {/* Bar */}
+                            <div
+                              style={{
+                                position: "relative",
+                                height: 12, // keeps bar visible
+                                background: "#F1F5F9",
+                                borderRadius: 6,
+                                overflow: "hidden",
+                                border: "1px solid #E2E8F0",
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                              }}
+                            >
+                              {/* Center line */}
+                              <div
+                                aria-hidden
+                                style={{
+                                  position: "absolute",
+                                  left: "50%",
+                                  top: 0,
+                                  bottom: 0,
+                                  width: 1,
+                                  background: "#CBD5E1",
+                                  zIndex: 2,
+                                }}
+                              />
 
-          {/* Negative side */}
-          <div style={{ position: "relative" }}>
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: `${negWidthPct}%`,
-                background: "#3182CE", // unchanged
-                transition: "width 0.2s ease",
-                zIndex: 1,
-              }}
-            />
-          </div>
+                              {/* Negative side */}
+                              <div style={{ position: "relative" }}>
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    right: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: `${negWidthPct}%`,
+                                    background: "#3182CE", // unchanged
+                                    transition: "width 0.2s ease",
+                                    zIndex: 1,
+                                  }}
+                                />
+                              </div>
 
-          {/* Positive side */}
-          <div style={{ position: "relative" }}>
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: `${posWidthPct}%`,
-                background: "#d13a3aff", // unchanged
-                transition: "width 0.2s ease",
-                zIndex: 1,
-              }}
-            />
-          </div>
+                              {/* Positive side */}
+                              <div style={{ position: "relative" }}>
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    left: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: `${posWidthPct}%`,
+                                    background: "#d13a3aff", // unchanged
+                                    transition: "width 0.2s ease",
+                                    zIndex: 1,
+                                  }}
+                                />
+                              </div>
 
-          {/* Error indicator */}
-          {showThisError && widthPct > 0 && (
-            <>
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  left: `${pctStart}%`,
-                  width: `${widthPct}%`,
-                  top: 7,
-                  height: 4,
-                  background: "rgba(15, 23, 42, 0.35)",
-                  borderRadius: 2,
-                  zIndex: 3,
-                }}
-              />
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  left: `${pctStart}%`,
-                  top: 2,
-                  bottom: 2,
-                  width: 1,
-                  background: "rgba(15, 23, 42, 0.55)",
-                  zIndex: 3,
-                }}
-              />
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  left: `${pctEnd}%`,
-                  transform: "translateX(-1px)",
-                  top: 2,
-                  bottom: 2,
-                  width: 1,
-                  background: "rgba(15, 23, 42, 0.55)",
-                  zIndex: 3,
-                }}
-              />
-            </>
-          )}
-        </div>
+                              {/* Error indicator */}
+                              {showThisError && widthPct > 0 && (
+                                <>
+                                  <div
+                                    aria-hidden
+                                    style={{
+                                      position: "absolute",
+                                      left: `${pctStart}%`,
+                                      width: `${widthPct}%`,
+                                      top: 7,
+                                      height: 4,
+                                      background: "rgba(15, 23, 42, 0.35)",
+                                      borderRadius: 2,
+                                      zIndex: 3,
+                                    }}
+                                  />
+                                  <div
+                                    aria-hidden
+                                    style={{
+                                      position: "absolute",
+                                      left: `${pctStart}%`,
+                                      top: 2,
+                                      bottom: 2,
+                                      width: 1,
+                                      background: "rgba(15, 23, 42, 0.55)",
+                                      zIndex: 3,
+                                    }}
+                                  />
+                                  <div
+                                    aria-hidden
+                                    style={{
+                                      position: "absolute",
+                                      left: `${pctEnd}%`,
+                                      transform: "translateX(-1px)",
+                                      top: 2,
+                                      bottom: 2,
+                                      width: 1,
+                                      background: "rgba(15, 23, 42, 0.55)",
+                                      zIndex: 3,
+                                    }}
+                                  />
+                                </>
+                              )}
+                            </div>
 
-        {/* Value + ± side-by-side under the bar, right-aligned */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 10,
-            marginTop: 4,
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          <div style={{ color }}>{v.toFixed(2)}</div>
-          <div style={{ color: "#64748B" }}>±{ciMag.toFixed(3)}</div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+                            {/* Value + ± side-by-side under the bar, right-aligned */}
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                gap: 10,
+                                marginTop: 4,
+                                fontVariantNumeric: "tabular-nums",
+                              }}
+                            >
+                              <div style={{ color }}>{v.toFixed(2)}</div>
+                              <div style={{ color: "#64748B" }}>±{ciMag.toFixed(3)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
 
-})}
+                  })}
 
                 </div>
               );
@@ -1143,7 +1180,7 @@ function RegionCard({
                 aria-label="See full analysis"
                 onClick={openFullAnalysis}
               >
-                view full analysis <i className="bi bi-box-arrow-up-right"></i>
+                view full analysis <ArrowUpRight className="ms-1 d-inline" size={14} />
               </button>
             </div>
 
@@ -1172,7 +1209,7 @@ function RegionCard({
                 aria-label="See full analysis"
                 onClick={openFullAnalysis}
               >
-                view full analysis <i className="bi bi-box-arrow-up-right"></i>
+                view full analysis <ArrowUpRight className="ms-1 d-inline" size={14} />
               </button>
             </div>
 
@@ -1205,12 +1242,12 @@ export default function LassoRegionPanel({
   filteredPoints,
   datasetId,
 }: LassoRegionPanelProps) {
-  
+
   const activeRegion = activeRegionIndex !== null ? regions[activeRegionIndex] : null;
-    // ✅ Modal state (big modal that will replace "open new page")
+  // ✅ Modal state (big modal that will replace "open new page")
   const [isFullAnalysisModalOpen, setIsFullAnalysisModalOpen] = React.useState(false);
   const [modalView, setModalView] = React.useState<"analysis" | "kg">("analysis");
-const [kgPayload, setKgPayload] = React.useState<{ genes: string[]; datasetId: string } | null>(null);
+  const [kgPayload, setKgPayload] = React.useState<{ genes: string[]; datasetId: string } | null>(null);
 
 
   // ✅ keep payload for later (modal content will use this)
@@ -1221,25 +1258,25 @@ const [kgPayload, setKgPayload] = React.useState<{ genes: string[]; datasetId: s
   } | null>(null);
 
   const closeFullModal = () => {
-  setIsFullAnalysisModalOpen(false);
-  setModalView("analysis");
-  setKgPayload(null);
-};
-
-
-const handleOpenFullAnalysisModal = React.useCallback(
-  (args: { regionLabel: string; datasetId?: string; genes: string[] }) => {
-    setFullAnalysisPayload(args);
-
-    // always start in analysis view when opening full modal
+    setIsFullAnalysisModalOpen(false);
     setModalView("analysis");
     setKgPayload(null);
+  };
 
-    onClose();
-    setIsFullAnalysisModalOpen(true);
-  },
-  [onClose]
-);
+
+  const handleOpenFullAnalysisModal = React.useCallback(
+    (args: { regionLabel: string; datasetId?: string; genes: string[] }) => {
+      setFullAnalysisPayload(args);
+
+      // always start in analysis view when opening full modal
+      setModalView("analysis");
+      setKgPayload(null);
+
+      onClose();
+      setIsFullAnalysisModalOpen(true);
+    },
+    [onClose]
+  );
 
 
 
@@ -1333,103 +1370,103 @@ const handleOpenFullAnalysisModal = React.useCallback(
       </aside>
 
       {/* ✅ BIG EMPTY MODAL */}
-{isFullAnalysisModalOpen && (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.55)",
-      zIndex: 20000,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 18,
-    }}
-    onClick={closeFullModal}
-  >
-    <div
-      style={{
-        width: "min(1400px, 96vw)",
-        height: "min(90vh, 980px)",
-        background: "#fff",
-        borderRadius: 14,
-        overflow: "hidden",
-        boxShadow: "0 24px 60px rgba(0,0,0,0.25)",
-        display: "flex",
-        flexDirection: "column",
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Header */}
-      <div
-        style={{
-          padding: "12px 14px",
-          borderBottom: `1px solid ${DIVIDER_COLOR}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {modalView === "kg" && (
-            <button
-              onClick={() => setModalView("analysis")}
+      {isFullAnalysisModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.55)",
+            zIndex: 20000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 18,
+          }}
+          onClick={closeFullModal}
+        >
+          <div
+            style={{
+              width: "min(1400px, 96vw)",
+              height: "min(90vh, 980px)",
+              background: "#fff",
+              borderRadius: 14,
+              overflow: "hidden",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.25)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
               style={{
-                border: `1px solid ${DIVIDER_COLOR}`,
-                background: "#fff",
-                borderRadius: 8,
-                padding: "6px 10px",
-                cursor: "pointer",
-                fontWeight: 700,
+                padding: "12px 14px",
+                borderBottom: `1px solid ${DIVIDER_COLOR}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
               }}
-              title="Back to Pathways"
             >
-              ← Back
-            </button>
-          )}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {modalView === "kg" && (
+                  <button
+                    onClick={() => setModalView("analysis")}
+                    style={{
+                      border: `1px solid ${DIVIDER_COLOR}`,
+                      background: "#fff",
+                      borderRadius: 8,
+                      padding: "6px 10px",
+                      cursor: "pointer",
+                      fontWeight: 700,
+                    }}
+                    title="Back to Pathways"
+                  >
+                    ← Back
+                  </button>
+                )}
 
-          <div style={{ fontWeight: 800 }}>
-            {modalView === "analysis" ? "Full Analysis" : "Knowledge Graph"}
+                <div style={{ fontWeight: 800 }}>
+                  {modalView === "analysis" ? "Full Analysis" : "Knowledge Graph"}
+                </div>
+              </div>
+
+              <button
+                onClick={closeFullModal}
+                style={{
+                  border: `1px solid ${DIVIDER_COLOR}`,
+                  background: "#000000ff",
+                  borderRadius: 8,
+                  width: 32,
+                  height: 32,
+                  cursor: "pointer",
+                  fontSize: 16,
+                  fontWeight: 800,
+                  lineHeight: "32px",
+                }}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body (fills modal; no extra padding) */}
+            <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+              {modalView === "analysis" ? (
+                <UnifiedPathwayNetwork
+                  embedded
+                  onOpenKnowledgeGraph={(payload) => {
+                    setKgPayload(payload);
+                    setModalView("kg");
+                  }}
+                />
+              ) : (
+                <KnowledgeGraph embedded payload={kgPayload ?? undefined} />
+              )}
+            </div>
           </div>
         </div>
-
-        <button
-          onClick={closeFullModal}
-          style={{
-            border: `1px solid ${DIVIDER_COLOR}`,
-            background: "#000000ff",
-            borderRadius: 8,
-            width: 32,
-            height: 32,
-            cursor: "pointer",
-            fontSize: 16,
-            fontWeight: 800,
-            lineHeight: "32px",
-          }}
-          title="Close"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Body (fills modal; no extra padding) */}
-      <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-        {modalView === "analysis" ? (
-          <UnifiedPathwayNetwork
-            embedded
-            onOpenKnowledgeGraph={(payload) => {
-              setKgPayload(payload);
-              setModalView("kg");
-            }}
-          />
-        ) : (
-          <KnowledgeGraph embedded payload={kgPayload ?? undefined} />
-        )}
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
     </>
   );

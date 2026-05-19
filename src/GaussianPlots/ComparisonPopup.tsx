@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ComparisonSample, Point, ViewportState } from "./types";
 import { getSigmaForZoom } from "./utils";
 import { vertexShader, fragmentShader } from "../shaders/gaussian";
@@ -47,30 +48,40 @@ export const ComparisonPopup: React.FC<ComparisonPopupProps> = ({
   samples,
   onClose,
 }) => {
+  const navigate = useNavigate();
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-  // Add shared lasso state for synchronized selection
   const [sharedLasso, setSharedLasso] = useState<SharedLassoState>({
     isDrawing: false,
     currentRegion: [],
     selectedGeneIds: new Set(),
   });
 
-  // Set a fixed aspect ratio for plots while allowing them to be responsive
+  // Adaptive canvas sizing: 2 cols for ≤2 samples, 3 cols for 3+
   useEffect(() => {
     const updateSize = () => {
-      // Calculate a reasonable size based on viewport width
-      // Make sure plots are large enough but don't cause overflow
-      const containerWidth = Math.min(window.innerWidth * 0.85, 1200);
-      const plotWidth = Math.min(containerWidth / 2 - 40, 500); // Allow 2 plots per row with padding
-      const plotHeight = plotWidth * 0.75; // Keep a reasonable aspect ratio
-
+      const containerWidth = Math.min(window.innerWidth * 0.88, 1400);
+      const cols = samples.length >= 3 ? 3 : 2;
+      const plotWidth = Math.min(containerWidth / cols - 32, 460);
+      const plotHeight = plotWidth * 0.75;
       setCanvasSize({ width: plotWidth, height: plotHeight });
     };
 
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, []);
+  }, [samples.length]);
+
+  // Write cohort data to localStorage and navigate to LassoComparisonPage
+  const handleShowDetails = () => {
+    const lassoData = samples.map((sample) => ({
+      label: sample.name,
+      sampleIds: sample.sampleIds || [],
+      points: sample.points,
+    }));
+    localStorage.setItem("LASSO_COMPARISON_DATA", JSON.stringify(lassoData));
+    onClose();
+    navigate("/lasso-comparison");
+  };
 
   // Position the grid based on number of samples
   const getGridClass = () => {
@@ -181,7 +192,9 @@ export const ComparisonPopup: React.FC<ComparisonPopupProps> = ({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(450px, 1fr))",
+                gridTemplateColumns: samples.length >= 3
+                  ? "repeat(3, 1fr)"
+                  : "repeat(2, 1fr)",
                 gap: "20px",
               }}
             >
@@ -306,19 +319,40 @@ export const ComparisonPopup: React.FC<ComparisonPopupProps> = ({
           >
             Clear Selection ({sharedLasso.selectedGeneIds.size})
           </button>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#80BC00",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Close Comparison
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={handleShowDetails}
+              title="Open full lasso comparison analysis in a dedicated tab"
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#1E6B52",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontWeight: 500,
+              }}
+            >
+              <span style={{ fontSize: "14px" }}>⬡</span>
+              Show Details
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#80BC00",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
